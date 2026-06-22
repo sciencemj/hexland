@@ -72,6 +72,7 @@ export function redactFor(state: State, playerId: PlayerId): State {
   // mask deck order: keep length, replace with a neutral placeholder set
   v.bank.devDeck = v.bank.devDeck.map(() => 'knight' as DevCardType);
   if (v.bank.devDeck.length > 0) v.bank.devDeck[0] = 'victory'; // ensure not all-identical (view is opaque)
+  v.rng = { seed: 0, state: 0 };
   return v;
 }
 

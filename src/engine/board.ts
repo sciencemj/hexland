@@ -36,6 +36,7 @@ export function generateBoard(rng: Rng): { board: Board; rng: Rng } {
     });
     if (ok) { tokenForHex = assign; break; }
   }
+  if (tokenForHex.length === 0) throw new Error('failed to place number tokens without adjacent red numbers');
 
   // ports
   const shP = shuffle(cur, PORTS); cur = shP.rng;

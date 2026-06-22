@@ -1,6 +1,6 @@
 // src/engine/reduce.ts
 import type { State, PlayerId, Action, NodeId, EdgeId, ResourceMap, HexId } from './types';
-import { TERRAIN_RESOURCE, RESOURCES, type Resource, type DevCardType } from './types';
+import { emptyResources, TERRAIN_RESOURCE, RESOURCES, type Resource, type DevCardType } from './types';
 import { clone, totalCards, COSTS, canAfford, subRes, addRes, countVictoryPoints } from './helpers';
 import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets, canBuildRoad, settlementPlacements, cityPlacements, hasPlayableDev, bankRatioFor } from './rules';
 import { randInt } from './rng';
@@ -55,6 +55,7 @@ function setupSettlement(s: State, playerId: PlayerId, node: NodeId): State {
 
 function setupRoad(s: State, playerId: PlayerId, edge: EdgeId): State {
   const setup = s.setup!;
+  if (setup.order[setup.index] !== playerId) throw new Error('not your setup turn');
   if (setup.needRoadFrom === null) throw new Error('place a settlement first');
   if (!roadSpotsFromNode(s, setup.needRoadFrom).includes(edge)) throw new Error('illegal road spot');
 
@@ -85,6 +86,7 @@ function rollDice(s: State, playerId: PlayerId): State {
   pushLog(s, playerId, `rolled ${sum}`);
   if (sum === 7) startSeven(s, playerId);
   else produceResources(s, sum);
+  maybeWin(s);
   return s;
 }
 
@@ -179,7 +181,7 @@ function playKnight(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerI
   s.players[playerId]!.playedKnights += 1;
   resolveRobber(s, playerId, hex, stealFrom);
   pushLog(s, playerId, 'played a Knight');
-  recomputeArmy(s);   // defined in Task 14; no-op until then
+  recomputeArmy(s);
   maybeWin(s);
   return s;
 }
@@ -194,7 +196,9 @@ function playRoadBuilding(s: State, playerId: PlayerId): State {
 
 function playYearOfPlenty(s: State, playerId: PlayerId, res: [Resource, Resource]): State {
   if (!hasPlayableDev(s, playerId, 'yearOfPlenty')) throw new Error('no playable year of plenty');
-  for (const r of res) if (s.bank.resources[r] <= 0) throw new Error('bank lacks that resource');
+  const demand = emptyResources();
+  for (const r of res) demand[r] += 1;
+  for (const r of RESOURCES) if (demand[r] > s.bank.resources[r]) throw new Error('bank lacks that resource');
   markPlayed(s, playerId, 'yearOfPlenty');
   for (const r of res) { s.players[playerId]!.resources[r] += 1; s.bank.resources[r] -= 1; }
   pushLog(s, playerId, 'played Year of Plenty');
@@ -275,6 +279,7 @@ function tradeBank(s: State, playerId: PlayerId, give: Resource, receive: Resour
 
 function tradeOffer(s: State, playerId: PlayerId, to: PlayerId, give: ResourceMap, want: ResourceMap): State {
   if (s.currentPlayer !== playerId) throw new Error('only the active player may offer');
+  if (!s.turn.hasRolled) throw new Error('roll first');
   if (to === playerId) throw new Error('cannot trade with yourself');
   if (totalCards(give) === 0 || totalCards(want) === 0) throw new Error('a trade must give AND take (no free gifts)');
   for (const k of RESOURCES) if (s.players[playerId]!.resources[k] < give[k]) throw new Error('you lack the offered cards');

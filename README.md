@@ -31,7 +31,7 @@ The engine never imports UI. A future Bun WebSocket server loads `src/engine`,
 validates client actions with `getLegalActions`, applies with `applyAction`, and
 broadcasts state. An MCP server exposes three tools — `get_state` (`redactFor`),
 `legal_actions` (`getLegalActions`), `apply_action` (`applyAction`) — so Claude
-plays as just another `Agent`.
+plays as just another `Agent`. A `tradeOffer` action is intentionally free-form (not enumerated by `getLegalActions` because the offer space is unbounded); a server/MCP layer must accept it and rely on `applyAction` to validate it.
 
 ## Rules
 

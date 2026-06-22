@@ -48,6 +48,16 @@ test('engine barrel re-exports the public API', async () => {
   expect(typeof api.checkWinner).toBe('function');
 });
 
+test('rollDice detects win for player already at >=10 VP at turn start', () => {
+  const g: any = freshPlay();
+  const p = g.currentPlayer;
+  // Grant 10 victory-point dev cards — ensures >=10 VP regardless of what is rolled
+  for (let i = 0; i < 10; i++)
+    g.players[p].devCards.push({ type: 'victory', boughtTurn: 0, played: false });
+  const after = applyAction(g, p, { type: 'rollDice' });
+  expect(after.winner).toBe(p);
+});
+
 test('determinism: same seed + same actions → identical state', () => {
   const run = () => {
     let g: any = createGame({ numPlayers: 4, seed: 11 });

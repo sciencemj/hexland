@@ -65,6 +65,25 @@ test('Year of Plenty draws 2 from the bank', () => {
   expect(g.players[p].resources.wheat).toBe(1);
 });
 
+test('Year of Plenty with doubled resource throws when bank has only 1', () => {
+  const s: any = freshPlay();
+  const p = s.currentPlayer;
+  s.players[p].devCards.push({ type: 'yearOfPlenty', boughtTurn: s.turn.turnNumber - 1, played: false });
+  s.bank.resources.ore = 1; // only 1 ore — cannot give 2
+  expect(() => applyAction(s, p, { type: 'playYearOfPlenty', resources: ['ore', 'ore'] })).toThrow('bank lacks that resource');
+});
+
+test('Year of Plenty with doubled resource grants 2 ore when bank has >= 2', () => {
+  const s: any = freshPlay();
+  const p = s.currentPlayer;
+  s.players[p].devCards.push({ type: 'yearOfPlenty', boughtTurn: s.turn.turnNumber - 1, played: false });
+  s.players[p].resources = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+  s.bank.resources.ore = 2;
+  const g = applyAction(s, p, { type: 'playYearOfPlenty', resources: ['ore', 'ore'] });
+  expect(g.players[p].resources.ore).toBe(2);
+  expect(g.bank.resources.ore).toBe(0);
+});
+
 test('Road Building grants 2 free roads', () => {
   const s: any = freshPlay();
   const p = s.currentPlayer;

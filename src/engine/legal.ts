@@ -44,6 +44,7 @@ function playActions(state: State, playerId: PlayerId): Action[] {
       return playerId === pending.to
         ? [{ type: 'tradeRespond', accept: true }, { type: 'tradeRespond', accept: false }]
         : [];
+    return [];
   }
   if (playerId !== state.currentPlayer) return [];
   if (!state.turn.hasRolled) return [{ type: 'rollDice' }, ...devCardActions(state, playerId)];
@@ -83,7 +84,12 @@ function devCardActions(state: State, playerId: PlayerId): Action[] {
   if (hasPlayableDev(state, playerId, 'roadBuilding')) out.push({ type: 'playRoadBuilding' });
   if (hasPlayableDev(state, playerId, 'yearOfPlenty'))
     for (const a of RESOURCES) for (const b of RESOURCES)
-      if (a <= b) out.push({ type: 'playYearOfPlenty', resources: [a, b] });
+      if (a <= b) {
+        const bankOk = a === b
+          ? state.bank.resources[a] >= 2
+          : state.bank.resources[a] >= 1 && state.bank.resources[b] >= 1;
+        if (bankOk) out.push({ type: 'playYearOfPlenty', resources: [a, b] });
+      }
   if (hasPlayableDev(state, playerId, 'monopoly'))
     for (const r of RESOURCES) out.push({ type: 'playMonopoly', resource: r });
 

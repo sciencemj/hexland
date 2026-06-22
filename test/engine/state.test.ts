@@ -49,3 +49,11 @@ test('redactFor hides opponents resources and unplayed dev cards', () => {
 test('checkWinner returns null at game start', () => {
   expect(checkWinner(createGame(cfg))).toBeNull();
 });
+
+test('redactFor zeroes the rng to prevent randomness prediction', () => {
+  const s = createGame(cfg);
+  const view = redactFor(s, 0);
+  expect(view.rng).toEqual({ seed: 0, state: 0 });
+  // original must be unaffected (clone discipline)
+  expect(s.rng).not.toEqual({ seed: 0, state: 0 });
+});
