@@ -1,7 +1,8 @@
 // src/engine/legal.ts
 import type { State, PlayerId, Action } from './types';
 import { emptyResources } from './types';
-import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets } from './rules';
+import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets, roadPlacements, settlementPlacements, cityPlacements } from './rules';
+import { COSTS, canAfford } from './helpers';
 
 export function getLegalActions(state: State, playerId: PlayerId): Action[] {
   if (state.winner !== null) return [];
@@ -49,4 +50,27 @@ function robberActions(state: State): Action[] {
   return out;
 }           // Task 10
 function devCardActions(_state: State, _playerId: PlayerId): Action[] { return []; } // Task 12
-function mainActions(_state: State, _playerId: PlayerId): Action[] { return []; }    // Tasks 11,12,15,16
+
+function buildActions(state: State, playerId: PlayerId): Action[] {
+  const p = state.players[playerId]!;
+  const out: Action[] = [];
+  if (p.piecesLeft.roads > 0 && (state.turn.freeRoads > 0 || canAfford(p.resources, COSTS.road)))
+    for (const e of roadPlacements(state, playerId)) out.push({ type: 'buildRoad', edge: e });
+  if (p.piecesLeft.settlements > 0 && canAfford(p.resources, COSTS.settlement))
+    for (const n of settlementPlacements(state, playerId)) out.push({ type: 'buildSettlement', node: n });
+  if (p.piecesLeft.cities > 0 && canAfford(p.resources, COSTS.city))
+    for (const n of cityPlacements(state, playerId)) out.push({ type: 'buildCity', node: n });
+  return out;
+}
+
+function tradeActions(_state: State, _playerId: PlayerId): Action[] { return []; }   // Task 15
+function endTurnActions(_state: State, _playerId: PlayerId): Action[] { return []; } // Task 16
+
+function mainActions(state: State, playerId: PlayerId): Action[] {
+  return [
+    ...buildActions(state, playerId),
+    ...devCardActions(state, playerId),
+    ...tradeActions(state, playerId),
+    ...endTurnActions(state, playerId),
+  ];
+}

@@ -1,8 +1,8 @@
 // src/engine/reduce.ts
 import type { State, PlayerId, Action, NodeId, EdgeId, ResourceMap, HexId } from './types';
 import { TERRAIN_RESOURCE, RESOURCES, type Resource } from './types';
-import { clone, totalCards } from './helpers';
-import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets } from './rules';
+import { clone, totalCards, COSTS, canAfford, subRes, countVictoryPoints } from './helpers';
+import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets, canBuildRoad, settlementPlacements, cityPlacements } from './rules';
 import { randInt } from './rng';
 
 export function applyAction(state: State, playerId: PlayerId, action: Action): State {
@@ -13,6 +13,9 @@ export function applyAction(state: State, playerId: PlayerId, action: Action): S
     case 'rollDice': return rollDice(s, playerId);
     case 'discard': return discard(s, playerId, action.resources);
     case 'moveRobber': return moveRobber(s, playerId, action.hex, action.stealFrom);
+    case 'buildRoad': return buildRoad(s, playerId, action.edge);
+    case 'buildSettlement': return buildSettlement(s, playerId, action.node);
+    case 'buildCity': return buildCity(s, playerId, action.node);
     default: throw new Error(`unhandled action: ${(action as Action).type}`);
   }
 }
@@ -119,6 +122,63 @@ function stealCard(s: State, from: PlayerId, to: PlayerId): void {
   const r = randInt(s.rng, hand.length); s.rng = r.rng;
   const card = hand[r.value]!;
   s.players[from]!.resources[card] -= 1; s.players[to]!.resources[card] += 1;
+}
+
+function payToBank(s: State, playerId: PlayerId, cost: ResourceMap): void {
+  const p = s.players[playerId]!;
+  p.resources = subRes(p.resources, cost);
+  for (const k of RESOURCES) s.bank.resources[k] += cost[k];
+}
+
+function maybeWin(s: State): void {
+  if (s.winner === null && countVictoryPoints(s, s.currentPlayer) >= 10) {
+    s.winner = s.currentPlayer; s.phase = 'ended';
+    pushLog(s, s.currentPlayer, 'wins the game!');
+  }
+}
+
+function buildRoad(s: State, playerId: PlayerId, edge: EdgeId): State {
+  if (s.currentPlayer !== playerId) throw new Error('not your turn');
+  if (!canBuildRoad(s, edge, playerId)) throw new Error('illegal road');
+  const p = s.players[playerId]!;
+  if (p.piecesLeft.roads <= 0) throw new Error('no road pieces left');
+  if (s.turn.freeRoads > 0) s.turn.freeRoads -= 1;
+  else { if (!canAfford(p.resources, COSTS.road)) throw new Error('cannot afford road'); payToBank(s, playerId, COSTS.road); }
+  s.board.edges[edge]!.road = { owner: playerId };
+  p.piecesLeft.roads -= 1;
+  pushLog(s, playerId, 'built a road');
+  maybeWin(s);
+  return s;
+}
+
+function buildSettlement(s: State, playerId: PlayerId, node: NodeId): State {
+  if (s.currentPlayer !== playerId) throw new Error('not your turn');
+  if (!settlementPlacements(s, playerId).includes(node)) throw new Error('illegal settlement');
+  const p = s.players[playerId]!;
+  if (p.piecesLeft.settlements <= 0) throw new Error('no settlement pieces left');
+  if (!canAfford(p.resources, COSTS.settlement)) throw new Error('cannot afford settlement');
+  payToBank(s, playerId, COSTS.settlement);
+  s.board.nodes[node]!.building = { type: 'settlement', owner: playerId };
+  p.piecesLeft.settlements -= 1;
+  updatePorts(s, playerId);
+  pushLog(s, playerId, 'built a settlement');
+  maybeWin(s);
+  return s;
+}
+
+function buildCity(s: State, playerId: PlayerId, node: NodeId): State {
+  if (s.currentPlayer !== playerId) throw new Error('not your turn');
+  if (!cityPlacements(s, playerId).includes(node)) throw new Error('illegal city');
+  const p = s.players[playerId]!;
+  if (p.piecesLeft.cities <= 0) throw new Error('no city pieces left');
+  if (!canAfford(p.resources, COSTS.city)) throw new Error('cannot afford city');
+  payToBank(s, playerId, COSTS.city);
+  s.board.nodes[node]!.building = { type: 'city', owner: playerId };
+  p.piecesLeft.cities -= 1;
+  p.piecesLeft.settlements += 1; // returned to supply
+  pushLog(s, playerId, 'built a city');
+  maybeWin(s);
+  return s;
 }
 
 export function produceResources(s: State, roll: number): void {

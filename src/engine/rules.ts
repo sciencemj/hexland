@@ -42,3 +42,33 @@ export function adjacentStealTargets(state: State, hexId: HexId, mover: PlayerId
   }
   return [...owners];
 }
+
+function nodeIsConnectionPoint(state: State, node: NodeId, playerId: PlayerId): boolean {
+  const b = state.board.nodes[node]!.building;
+  if (b && b.owner !== playerId) return false; // blocked: cannot extend through an opponent building
+  if (b && b.owner === playerId) return true;
+  return state.board.nodes[node]!.edgeIds.some(e => state.board.edges[e]!.road?.owner === playerId);
+}
+
+export function canBuildRoad(state: State, edge: EdgeId, playerId: PlayerId): boolean {
+  const e = state.board.edges[edge]!;
+  if (e.road !== null) return false;
+  return nodeIsConnectionPoint(state, e.nodeIds[0], playerId) || nodeIsConnectionPoint(state, e.nodeIds[1], playerId);
+}
+export function roadPlacements(state: State, playerId: PlayerId): EdgeId[] {
+  return state.board.edges.filter(e => canBuildRoad(state, e.id, playerId)).map(e => e.id);
+}
+
+function nodeTouchesPlayerRoad(state: State, node: NodeId, playerId: PlayerId): boolean {
+  return state.board.nodes[node]!.edgeIds.some(e => state.board.edges[e]!.road?.owner === playerId);
+}
+export function settlementPlacements(state: State, playerId: PlayerId): NodeId[] {
+  return state.board.nodes
+    .filter(n => distanceOk(state, n.id) && nodeTouchesPlayerRoad(state, n.id, playerId))
+    .map(n => n.id);
+}
+export function cityPlacements(state: State, playerId: PlayerId): NodeId[] {
+  return state.board.nodes
+    .filter(n => n.building?.type === 'settlement' && n.building.owner === playerId)
+    .map(n => n.id);
+}
