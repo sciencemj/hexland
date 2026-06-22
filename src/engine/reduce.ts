@@ -275,7 +275,7 @@ function tradeBank(s: State, playerId: PlayerId, give: Resource, receive: Resour
 function tradeOffer(s: State, playerId: PlayerId, to: PlayerId, give: ResourceMap, want: ResourceMap): State {
   if (s.currentPlayer !== playerId) throw new Error('only the active player may offer');
   if (to === playerId) throw new Error('cannot trade with yourself');
-  if (totalCards(give) === 0 && totalCards(want) === 0) throw new Error('empty trade');
+  if (totalCards(give) === 0 || totalCards(want) === 0) throw new Error('a trade must give AND take (no free gifts)');
   for (const k of RESOURCES) if (s.players[playerId]!.resources[k] < give[k]) throw new Error('you lack the offered cards');
   s.pending = { kind: 'tradeOffer', from: playerId, to, give, want };
   pushLog(s, playerId, `offered a trade to player ${to}`);
@@ -286,6 +286,7 @@ function tradeRespond(s: State, playerId: PlayerId, accept: boolean): State {
   if (s.pending?.kind !== 'tradeOffer' || s.pending.to !== playerId) throw new Error('no offer to you');
   const { from, give, want } = s.pending;
   if (accept) {
+    for (const k of RESOURCES) if (s.players[from]!.resources[k] < give[k]) throw new Error('offerer no longer holds the offered cards');
     for (const k of RESOURCES) if (s.players[playerId]!.resources[k] < want[k]) throw new Error('you lack the requested cards');
     s.players[from]!.resources = addRes(subRes(s.players[from]!.resources, give), want);
     s.players[playerId]!.resources = addRes(subRes(s.players[playerId]!.resources, want), give);

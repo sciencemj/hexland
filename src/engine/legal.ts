@@ -90,6 +90,7 @@ function buildActions(state: State, playerId: PlayerId): Action[] {
 }
 
 function tradeActions(state: State, playerId: PlayerId): Action[] {
+  if (!state.turn.hasRolled) return [];
   const p = state.players[playerId]!;
   const out: Action[] = [];
   for (const give of RESOURCES) {

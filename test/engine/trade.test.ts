@@ -77,3 +77,47 @@ test('player trade: reject clears the offer with no change', () => {
   expect(done.players[opp].resources.ore).toBe(1);
   expect(done.pending).toBeNull();
 });
+
+test('tradeOffer from non-active player throws', () => {
+  const s: any = freshPlay();
+  const p = s.currentPlayer;
+  const opp = (p + 1) % 4;
+  s.players[opp].resources = { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+  expect(() => applyAction(s, opp, {
+    type: 'tradeOffer', to: p,
+    give: { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+    want: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 1 },
+  })).toThrow('only the active player may offer');
+});
+
+test('one-sided offer (give non-empty, want empty) throws', () => {
+  const s: any = freshPlay();
+  const p = s.currentPlayer;
+  const opp = (p + 1) % 4;
+  s.players[p].resources = { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+  expect(() => applyAction(s, p, {
+    type: 'tradeOffer', to: opp,
+    give: { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+    want: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+  })).toThrow('a trade must give AND take (no free gifts)');
+});
+
+test('tradeRespond accept throws when offerer no longer holds the offered cards', () => {
+  const s: any = freshPlay();
+  const p = s.currentPlayer;
+  const opp = (p + 1) % 4;
+  // Give offerer exactly 2 wood (enough to offer but will be zeroed out)
+  // Give opponent 1 ore to accept with
+  s.players[p].resources = { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+  s.players[opp].resources = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 1 };
+  const offered = applyAction(s, p, {
+    type: 'tradeOffer', to: opp,
+    give: { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+    want: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 1 },
+  });
+  // Simulate offerer spending their wood after the offer was made
+  offered.players[p].resources.wood = 0;
+  // Now acceptance should throw because offerer can no longer cover the offer
+  expect(() => applyAction(offered, opp, { type: 'tradeRespond', accept: true }))
+    .toThrow('offerer no longer holds the offered cards');
+});
