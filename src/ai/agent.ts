@@ -29,5 +29,4 @@ export const randomAgent: Agent = {
   },
 };
 
-export const registry: Record<'medium', Agent> = { medium: randomAgent }; // replaced in Task 18
-export const getAgent = (difficulty: 'medium'): Agent => registry[difficulty];
+// registry and getAgent live in registry.ts to avoid the agent ↔ heuristic import cycle
