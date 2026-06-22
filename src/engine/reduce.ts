@@ -4,6 +4,7 @@ import { TERRAIN_RESOURCE, RESOURCES, type Resource, type DevCardType } from './
 import { clone, totalCards, COSTS, canAfford, subRes, countVictoryPoints } from './helpers';
 import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets, canBuildRoad, settlementPlacements, cityPlacements, hasPlayableDev } from './rules';
 import { randInt } from './rng';
+import { recomputeLongestRoad, recomputeArmy } from './scoring';
 
 export function applyAction(state: State, playerId: PlayerId, action: Action): State {
   const s = clone(state);
@@ -140,9 +141,6 @@ function payToBank(s: State, playerId: PlayerId, cost: ResourceMap): void {
   for (const k of RESOURCES) s.bank.resources[k] += cost[k];
 }
 
-// Task 14 replaces this no-op with a real implementation in scoring.ts
-function recomputeArmy(_s: State) {}
-
 function maybeWin(s: State): void {
   if (s.winner === null && countVictoryPoints(s, s.currentPlayer) >= 10) {
     s.winner = s.currentPlayer; s.phase = 'ended';
@@ -222,6 +220,7 @@ function buildRoad(s: State, playerId: PlayerId, edge: EdgeId): State {
   s.board.edges[edge]!.road = { owner: playerId };
   p.piecesLeft.roads -= 1;
   pushLog(s, playerId, 'built a road');
+  recomputeLongestRoad(s);
   maybeWin(s);
   return s;
 }
@@ -237,6 +236,7 @@ function buildSettlement(s: State, playerId: PlayerId, node: NodeId): State {
   p.piecesLeft.settlements -= 1;
   updatePorts(s, playerId);
   pushLog(s, playerId, 'built a settlement');
+  recomputeLongestRoad(s);
   maybeWin(s);
   return s;
 }
