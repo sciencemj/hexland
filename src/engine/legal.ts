@@ -1,7 +1,7 @@
 // src/engine/legal.ts
 import type { State, PlayerId, Action } from './types';
 import { emptyResources, RESOURCES } from './types';
-import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets, roadPlacements, settlementPlacements, cityPlacements, hasPlayableDev } from './rules';
+import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets, roadPlacements, settlementPlacements, cityPlacements, hasPlayableDev, bankRatioFor } from './rules';
 import { COSTS, canAfford } from './helpers';
 
 export function getLegalActions(state: State, playerId: PlayerId): Action[] {
@@ -89,7 +89,19 @@ function buildActions(state: State, playerId: PlayerId): Action[] {
   return out;
 }
 
-function tradeActions(_state: State, _playerId: PlayerId): Action[] { return []; }   // Task 15
+function tradeActions(state: State, playerId: PlayerId): Action[] {
+  const p = state.players[playerId]!;
+  const out: Action[] = [];
+  for (const give of RESOURCES) {
+    const ratio = bankRatioFor(state, playerId, give);
+    if (p.resources[give] < ratio) continue;
+    for (const receive of RESOURCES) {
+      if (receive === give) continue;
+      if (state.bank.resources[receive] > 0) out.push({ type: 'tradeBank', give, receive });
+    }
+  }
+  return out;
+}   // Task 15
 function endTurnActions(_state: State, _playerId: PlayerId): Action[] { return []; } // Task 16
 
 function mainActions(state: State, playerId: PlayerId): Action[] {

@@ -1,8 +1,8 @@
 // src/engine/reduce.ts
 import type { State, PlayerId, Action, NodeId, EdgeId, ResourceMap, HexId } from './types';
 import { TERRAIN_RESOURCE, RESOURCES, type Resource, type DevCardType } from './types';
-import { clone, totalCards, COSTS, canAfford, subRes, countVictoryPoints } from './helpers';
-import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets, canBuildRoad, settlementPlacements, cityPlacements, hasPlayableDev } from './rules';
+import { clone, totalCards, COSTS, canAfford, subRes, addRes, countVictoryPoints } from './helpers';
+import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets, canBuildRoad, settlementPlacements, cityPlacements, hasPlayableDev, bankRatioFor } from './rules';
 import { randInt } from './rng';
 import { recomputeLongestRoad, recomputeArmy } from './scoring';
 
@@ -22,6 +22,9 @@ export function applyAction(state: State, playerId: PlayerId, action: Action): S
     case 'playRoadBuilding': return playRoadBuilding(s, playerId);
     case 'playYearOfPlenty': return playYearOfPlenty(s, playerId, action.resources);
     case 'playMonopoly':     return playMonopoly(s, playerId, action.resource);
+    case 'tradeBank':    return tradeBank(s, playerId, action.give, action.receive);
+    case 'tradeOffer':   return tradeOffer(s, playerId, action.to, action.give, action.want);
+    case 'tradeRespond': return tradeRespond(s, playerId, action.accept);
     default: throw new Error(`unhandled action: ${(action as Action).type}`);
   }
 }
@@ -253,6 +256,44 @@ function buildCity(s: State, playerId: PlayerId, node: NodeId): State {
   p.piecesLeft.settlements += 1; // returned to supply
   pushLog(s, playerId, 'built a city');
   maybeWin(s);
+  return s;
+}
+
+function tradeBank(s: State, playerId: PlayerId, give: Resource, receive: Resource): State {
+  if (s.currentPlayer !== playerId) throw new Error('not your turn');
+  if (!s.turn.hasRolled) throw new Error('roll first');
+  const ratio = bankRatioFor(s, playerId, give);
+  const p = s.players[playerId]!;
+  if (p.resources[give] < ratio) throw new Error('not enough to trade');
+  if (s.bank.resources[receive] <= 0) throw new Error('bank is out of that resource');
+  p.resources[give] -= ratio; s.bank.resources[give] += ratio;
+  p.resources[receive] += 1; s.bank.resources[receive] -= 1;
+  pushLog(s, playerId, `bank trade ${ratio} ${give} → 1 ${receive}`);
+  return s;
+}
+
+function tradeOffer(s: State, playerId: PlayerId, to: PlayerId, give: ResourceMap, want: ResourceMap): State {
+  if (s.currentPlayer !== playerId) throw new Error('only the active player may offer');
+  if (to === playerId) throw new Error('cannot trade with yourself');
+  if (totalCards(give) === 0 && totalCards(want) === 0) throw new Error('empty trade');
+  for (const k of RESOURCES) if (s.players[playerId]!.resources[k] < give[k]) throw new Error('you lack the offered cards');
+  s.pending = { kind: 'tradeOffer', from: playerId, to, give, want };
+  pushLog(s, playerId, `offered a trade to player ${to}`);
+  return s;
+}
+
+function tradeRespond(s: State, playerId: PlayerId, accept: boolean): State {
+  if (s.pending?.kind !== 'tradeOffer' || s.pending.to !== playerId) throw new Error('no offer to you');
+  const { from, give, want } = s.pending;
+  if (accept) {
+    for (const k of RESOURCES) if (s.players[playerId]!.resources[k] < want[k]) throw new Error('you lack the requested cards');
+    s.players[from]!.resources = addRes(subRes(s.players[from]!.resources, give), want);
+    s.players[playerId]!.resources = addRes(subRes(s.players[playerId]!.resources, want), give);
+    pushLog(s, playerId, `accepted the trade`);
+  } else {
+    pushLog(s, playerId, `declined the trade`);
+  }
+  s.pending = null;
   return s;
 }
 

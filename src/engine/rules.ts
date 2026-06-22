@@ -1,5 +1,5 @@
 // src/engine/rules.ts
-import type { State, NodeId, EdgeId, PlayerId, PortType, HexId, DevCardType } from './types';
+import type { State, NodeId, EdgeId, PlayerId, PortType, HexId, DevCardType, Resource } from './types';
 import { RESOURCES } from './types';
 import { totalCards } from './helpers';
 
@@ -77,4 +77,11 @@ export function hasPlayableDev(state: State, playerId: PlayerId, type: DevCardTy
   if (state.turn.devCardPlayedThisTurn) return false;
   const p = state.players[playerId]!;
   return p.devCards.some(c => c.type === type && !c.played && c.boughtTurn < state.turn.turnNumber);
+}
+
+export function bankRatioFor(state: State, playerId: PlayerId, give: Resource): number {
+  const ports = state.players[playerId]!.ports;
+  if (ports.includes(give)) return 2;
+  if (ports.includes('any')) return 3;
+  return 4;
 }
