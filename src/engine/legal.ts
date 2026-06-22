@@ -4,6 +4,19 @@ import { emptyResources, RESOURCES } from './types';
 import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets, roadPlacements, settlementPlacements, cityPlacements, hasPlayableDev, bankRatioFor } from './rules';
 import { COSTS, canAfford } from './helpers';
 
+export function nextActor(state: State): PlayerId | null {
+  if (state.winner !== null) return null;
+  const pend = state.pending;
+  if (pend) {
+    if (pend.kind === 'discard') return pend.remaining[0] ?? null;
+    if (pend.kind === 'robber') return pend.mover;
+    if (pend.kind === 'tradeOffer') return pend.to;
+  }
+  if (state.phase === 'setup') return state.setup!.order[state.setup!.index] ?? null;
+  if (state.phase === 'play') return state.currentPlayer;
+  return null;
+}
+
 export function getLegalActions(state: State, playerId: PlayerId): Action[] {
   if (state.winner !== null) return [];
   if (state.phase === 'setup') return setupActions(state, playerId);
