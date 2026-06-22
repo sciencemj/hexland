@@ -1,8 +1,8 @@
 // src/engine/reduce.ts
 import type { State, PlayerId, Action, NodeId, EdgeId, ResourceMap, HexId } from './types';
-import { TERRAIN_RESOURCE, RESOURCES, type Resource } from './types';
+import { TERRAIN_RESOURCE, RESOURCES, type Resource, type DevCardType } from './types';
 import { clone, totalCards, COSTS, canAfford, subRes, countVictoryPoints } from './helpers';
-import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets, canBuildRoad, settlementPlacements, cityPlacements } from './rules';
+import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets, canBuildRoad, settlementPlacements, cityPlacements, hasPlayableDev } from './rules';
 import { randInt } from './rng';
 
 export function applyAction(state: State, playerId: PlayerId, action: Action): State {
@@ -16,6 +16,11 @@ export function applyAction(state: State, playerId: PlayerId, action: Action): S
     case 'buildRoad': return buildRoad(s, playerId, action.edge);
     case 'buildSettlement': return buildSettlement(s, playerId, action.node);
     case 'buildCity': return buildCity(s, playerId, action.node);
+    case 'buyDevCard':       return buyDevCard(s, playerId);
+    case 'playKnight':       return playKnight(s, playerId, action.hex, action.stealFrom);
+    case 'playRoadBuilding': return playRoadBuilding(s, playerId);
+    case 'playYearOfPlenty': return playYearOfPlenty(s, playerId, action.resources);
+    case 'playMonopoly':     return playMonopoly(s, playerId, action.resource);
     default: throw new Error(`unhandled action: ${(action as Action).type}`);
   }
 }
@@ -100,18 +105,23 @@ function discard(s: State, playerId: PlayerId, res: ResourceMap): State {
   return s;
 }
 
-function moveRobber(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerId | null): State {
-  if (s.pending?.kind !== 'robber' || s.pending.mover !== playerId) throw new Error('no robber move pending');
+function resolveRobber(s: State, mover: PlayerId, hex: HexId, stealFrom: PlayerId | null): void {
   if (hex === s.board.robberHex) throw new Error('robber must move to a different hex');
   s.board.robberHex = hex;
-  if (stealFrom === null && adjacentStealTargets(s, hex, playerId).length > 0)
+  // mandatory-steal guard: cannot decline a steal when a valid target exists
+  if (stealFrom === null && adjacentStealTargets(s, hex, mover).length > 0)
     throw new Error('must steal when a valid target exists');
   if (stealFrom !== null) {
-    if (!adjacentStealTargets(s, hex, playerId).includes(stealFrom)) throw new Error('illegal steal target');
-    stealCard(s, stealFrom, playerId);
+    if (!adjacentStealTargets(s, hex, mover).includes(stealFrom)) throw new Error('illegal steal target');
+    stealCard(s, stealFrom, mover);
   }
+}
+
+function moveRobber(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerId | null): State {
+  if (s.pending?.kind !== 'robber' || s.pending.mover !== playerId) throw new Error('no robber move pending');
+  resolveRobber(s, playerId, hex, stealFrom);
   s.pending = null;
-  pushLog(s, playerId, `moved the robber` + (stealFrom !== null ? ` and stole from player ${stealFrom}` : ''));
+  pushLog(s, playerId, 'moved the robber' + (stealFrom !== null ? ` and stole from player ${stealFrom}` : ''));
   return s;
 }
 
@@ -130,11 +140,76 @@ function payToBank(s: State, playerId: PlayerId, cost: ResourceMap): void {
   for (const k of RESOURCES) s.bank.resources[k] += cost[k];
 }
 
+// Task 14 replaces this no-op with a real implementation in scoring.ts
+function recomputeArmy(_s: State) {}
+
 function maybeWin(s: State): void {
   if (s.winner === null && countVictoryPoints(s, s.currentPlayer) >= 10) {
     s.winner = s.currentPlayer; s.phase = 'ended';
     pushLog(s, s.currentPlayer, 'wins the game!');
   }
+}
+
+function markPlayed(s: State, playerId: PlayerId, type: DevCardType): void {
+  const card = s.players[playerId]!.devCards.find(c => c.type === type && !c.played && c.boughtTurn < s.turn.turnNumber);
+  if (!card) throw new Error(`no playable ${type}`);
+  card.played = true;
+  s.turn.devCardPlayedThisTurn = true;
+}
+
+function buyDevCard(s: State, playerId: PlayerId): State {
+  if (s.currentPlayer !== playerId) throw new Error('not your turn');
+  if (!s.turn.hasRolled) throw new Error('roll first');
+  if (s.bank.devDeck.length === 0) throw new Error('dev deck empty');
+  const p = s.players[playerId]!;
+  if (!canAfford(p.resources, COSTS.devCard)) throw new Error('cannot afford dev card');
+  payToBank(s, playerId, COSTS.devCard);
+  const type = s.bank.devDeck.pop()!;
+  p.devCards.push({ type, boughtTurn: s.turn.turnNumber, played: false });
+  pushLog(s, playerId, 'bought a development card');
+  maybeWin(s); // a VP card may complete a win the turn it is bought
+  return s;
+}
+
+function playKnight(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerId | null): State {
+  if (!hasPlayableDev(s, playerId, 'knight')) throw new Error('no playable knight');
+  markPlayed(s, playerId, 'knight');
+  s.players[playerId]!.playedKnights += 1;
+  resolveRobber(s, playerId, hex, stealFrom);
+  pushLog(s, playerId, 'played a Knight');
+  recomputeArmy(s);   // defined in Task 14; no-op until then
+  maybeWin(s);
+  return s;
+}
+
+function playRoadBuilding(s: State, playerId: PlayerId): State {
+  if (!hasPlayableDev(s, playerId, 'roadBuilding')) throw new Error('no playable road building');
+  markPlayed(s, playerId, 'roadBuilding');
+  s.turn.freeRoads += 2;
+  pushLog(s, playerId, 'played Road Building');
+  return s;
+}
+
+function playYearOfPlenty(s: State, playerId: PlayerId, res: [Resource, Resource]): State {
+  if (!hasPlayableDev(s, playerId, 'yearOfPlenty')) throw new Error('no playable year of plenty');
+  for (const r of res) if (s.bank.resources[r] <= 0) throw new Error('bank lacks that resource');
+  markPlayed(s, playerId, 'yearOfPlenty');
+  for (const r of res) { s.players[playerId]!.resources[r] += 1; s.bank.resources[r] -= 1; }
+  pushLog(s, playerId, 'played Year of Plenty');
+  return s;
+}
+
+function playMonopoly(s: State, playerId: PlayerId, resource: Resource): State {
+  if (!hasPlayableDev(s, playerId, 'monopoly')) throw new Error('no playable monopoly');
+  markPlayed(s, playerId, 'monopoly');
+  let taken = 0;
+  for (const q of s.players) {
+    if (q.id === playerId) continue;
+    taken += q.resources[resource]; q.resources[resource] = 0;
+  }
+  s.players[playerId]!.resources[resource] += taken;
+  pushLog(s, playerId, `played Monopoly on ${resource} (+${taken})`);
+  return s;
 }
 
 function buildRoad(s: State, playerId: PlayerId, edge: EdgeId): State {

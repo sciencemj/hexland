@@ -1,5 +1,5 @@
 // src/engine/rules.ts
-import type { State, NodeId, EdgeId, PlayerId, PortType, HexId } from './types';
+import type { State, NodeId, EdgeId, PlayerId, PortType, HexId, DevCardType } from './types';
 import { RESOURCES } from './types';
 import { totalCards } from './helpers';
 
@@ -71,4 +71,10 @@ export function cityPlacements(state: State, playerId: PlayerId): NodeId[] {
   return state.board.nodes
     .filter(n => n.building?.type === 'settlement' && n.building.owner === playerId)
     .map(n => n.id);
+}
+
+export function hasPlayableDev(state: State, playerId: PlayerId, type: DevCardType): boolean {
+  if (state.turn.devCardPlayedThisTurn) return false;
+  const p = state.players[playerId]!;
+  return p.devCards.some(c => c.type === type && !c.played && c.boughtTurn < state.turn.turnNumber);
 }

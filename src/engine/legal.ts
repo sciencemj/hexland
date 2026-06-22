@@ -1,7 +1,7 @@
 // src/engine/legal.ts
 import type { State, PlayerId, Action } from './types';
-import { emptyResources } from './types';
-import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets, roadPlacements, settlementPlacements, cityPlacements } from './rules';
+import { emptyResources, RESOURCES } from './types';
+import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets, roadPlacements, settlementPlacements, cityPlacements, hasPlayableDev } from './rules';
 import { COSTS, canAfford } from './helpers';
 
 export function getLegalActions(state: State, playerId: PlayerId): Action[] {
@@ -49,7 +49,33 @@ function robberActions(state: State): Action[] {
   }
   return out;
 }           // Task 10
-function devCardActions(_state: State, _playerId: PlayerId): Action[] { return []; } // Task 12
+function devCardActions(state: State, playerId: PlayerId): Action[] {
+  if (playerId !== state.currentPlayer || state.pending) return [];
+  const p = state.players[playerId]!;
+  const out: Action[] = [];
+
+  // buy (only after the roll, in the build phase)
+  if (state.turn.hasRolled && state.bank.devDeck.length > 0 && canAfford(p.resources, COSTS.devCard))
+    out.push({ type: 'buyDevCard' });
+
+  // play (≤1 per turn)
+  if (hasPlayableDev(state, playerId, 'knight')) {
+    for (const hex of state.board.hexes) {
+      if (hex.id === state.board.robberHex) continue;
+      const targets = adjacentStealTargets(state, hex.id, playerId);
+      if (targets.length === 0) out.push({ type: 'playKnight', hex: hex.id, stealFrom: null });
+      else for (const t of targets) out.push({ type: 'playKnight', hex: hex.id, stealFrom: t });
+    }
+  }
+  if (hasPlayableDev(state, playerId, 'roadBuilding')) out.push({ type: 'playRoadBuilding' });
+  if (hasPlayableDev(state, playerId, 'yearOfPlenty'))
+    for (const a of RESOURCES) for (const b of RESOURCES)
+      if (a <= b) out.push({ type: 'playYearOfPlenty', resources: [a, b] });
+  if (hasPlayableDev(state, playerId, 'monopoly'))
+    for (const r of RESOURCES) out.push({ type: 'playMonopoly', resource: r });
+
+  return out;
+} // Task 12
 
 function buildActions(state: State, playerId: PlayerId): Action[] {
   const p = state.players[playerId]!;
