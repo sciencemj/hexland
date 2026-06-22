@@ -1,8 +1,8 @@
 // src/engine/reduce.ts
-import type { State, PlayerId, Action, NodeId, EdgeId } from './types';
+import type { State, PlayerId, Action, NodeId, EdgeId, ResourceMap, HexId } from './types';
 import { TERRAIN_RESOURCE, RESOURCES, type Resource } from './types';
 import { clone, totalCards } from './helpers';
-import { pushLog, updatePorts, distanceOk, roadSpotsFromNode } from './rules';
+import { pushLog, updatePorts, distanceOk, roadSpotsFromNode, requiredDiscardCount, adjacentStealTargets } from './rules';
 import { randInt } from './rng';
 
 export function applyAction(state: State, playerId: PlayerId, action: Action): State {
@@ -11,6 +11,8 @@ export function applyAction(state: State, playerId: PlayerId, action: Action): S
     case 'setupSettlement': return setupSettlement(s, playerId, action.node);
     case 'setupRoad': return setupRoad(s, playerId, action.edge);
     case 'rollDice': return rollDice(s, playerId);
+    case 'discard': return discard(s, playerId, action.resources);
+    case 'moveRobber': return moveRobber(s, playerId, action.hex, action.stealFrom);
     default: throw new Error(`unhandled action: ${(action as Action).type}`);
   }
 }
@@ -78,6 +80,43 @@ function startSeven(s: State, roller: PlayerId): void {
   s.pending = remaining.length > 0
     ? { kind: 'discard', remaining }
     : { kind: 'robber', mover: roller, viaKnight: false };
+}
+
+function discard(s: State, playerId: PlayerId, res: ResourceMap): State {
+  if (s.pending?.kind !== 'discard' || !s.pending.remaining.includes(playerId)) throw new Error('no discard pending');
+  const need = requiredDiscardCount(s, playerId);
+  if (totalCards(res) !== need) throw new Error(`must discard exactly ${need}`);
+  const p = s.players[playerId]!;
+  for (const k of RESOURCES) {
+    if (res[k] > p.resources[k]) throw new Error('discarding cards you do not have');
+    p.resources[k] -= res[k]; s.bank.resources[k] += res[k];
+  }
+  s.pending.remaining = s.pending.remaining.filter(id => id !== playerId);
+  pushLog(s, playerId, `discarded ${need} cards`);
+  if (s.pending.remaining.length === 0) s.pending = { kind: 'robber', mover: s.currentPlayer, viaKnight: false };
+  return s;
+}
+
+function moveRobber(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerId | null): State {
+  if (s.pending?.kind !== 'robber' || s.pending.mover !== playerId) throw new Error('no robber move pending');
+  if (hex === s.board.robberHex) throw new Error('robber must move to a different hex');
+  s.board.robberHex = hex;
+  if (stealFrom !== null) {
+    if (!adjacentStealTargets(s, hex, playerId).includes(stealFrom)) throw new Error('illegal steal target');
+    stealCard(s, stealFrom, playerId);
+  }
+  s.pending = null;
+  pushLog(s, playerId, `moved the robber` + (stealFrom !== null ? ` and stole from player ${stealFrom}` : ''));
+  return s;
+}
+
+function stealCard(s: State, from: PlayerId, to: PlayerId): void {
+  const hand: Resource[] = [];
+  for (const k of RESOURCES) for (let i = 0; i < s.players[from]!.resources[k]; i++) hand.push(k);
+  if (hand.length === 0) return;
+  const r = randInt(s.rng, hand.length); s.rng = r.rng;
+  const card = hand[r.value]!;
+  s.players[from]!.resources[card] -= 1; s.players[to]!.resources[card] += 1;
 }
 
 export function produceResources(s: State, roll: number): void {

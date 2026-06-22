@@ -1,7 +1,7 @@
 // src/engine/legal.ts
 import type { State, PlayerId, Action } from './types';
 import { emptyResources } from './types';
-import { setupSettlementSpots, roadSpotsFromNode } from './rules';
+import { setupSettlementSpots, roadSpotsFromNode, adjacentStealTargets } from './rules';
 
 export function getLegalActions(state: State, playerId: PlayerId): Action[] {
   if (state.winner !== null) return [];
@@ -37,6 +37,16 @@ function playActions(state: State, playerId: PlayerId): Action[] {
 }
 
 // builder stubs — implemented by later tasks:
-function robberActions(_state: State): Action[] { return []; }           // Task 10
+function robberActions(state: State): Action[] {
+  const mover = (state.pending as { kind: 'robber'; mover: PlayerId }).mover;
+  const out: Action[] = [];
+  for (const hex of state.board.hexes) {
+    if (hex.id === state.board.robberHex) continue;
+    const targets = adjacentStealTargets(state, hex.id, mover);
+    if (targets.length === 0) out.push({ type: 'moveRobber', hex: hex.id, stealFrom: null });
+    else for (const t of targets) out.push({ type: 'moveRobber', hex: hex.id, stealFrom: t });
+  }
+  return out;
+}           // Task 10
 function devCardActions(_state: State, _playerId: PlayerId): Action[] { return []; } // Task 12
 function mainActions(_state: State, _playerId: PlayerId): Action[] { return []; }    // Tasks 11,12,15,16

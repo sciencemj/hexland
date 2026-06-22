@@ -1,5 +1,7 @@
 // src/engine/rules.ts
-import type { State, NodeId, EdgeId, PlayerId, PortType } from './types';
+import type { State, NodeId, EdgeId, PlayerId, PortType, HexId } from './types';
+import { RESOURCES } from './types';
+import { totalCards } from './helpers';
 
 export function pushLog(state: State, playerId: PlayerId, text: string): void {
   state.log.push({ turn: state.turn.turnNumber, player: playerId, text });
@@ -25,4 +27,18 @@ export function updatePorts(state: State, playerId: PlayerId): void {
   for (const n of state.board.nodes)
     if (n.building?.owner === playerId && n.port !== null) set.add(n.port);
   state.players[playerId]!.ports = [...set];
+}
+
+export function requiredDiscardCount(state: State, playerId: PlayerId): number {
+  const total = totalCards(state.players[playerId]!.resources);
+  return total > 7 ? Math.floor(total / 2) : 0;
+}
+
+export function adjacentStealTargets(state: State, hexId: HexId, mover: PlayerId): PlayerId[] {
+  const owners = new Set<PlayerId>();
+  for (const nid of state.board.hexes[hexId]!.nodeIds) {
+    const b = state.board.nodes[nid]!.building;
+    if (b && b.owner !== mover && totalCards(state.players[b.owner]!.resources) > 0) owners.add(b.owner);
+  }
+  return [...owners];
 }
