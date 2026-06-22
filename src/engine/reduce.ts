@@ -25,6 +25,7 @@ export function applyAction(state: State, playerId: PlayerId, action: Action): S
     case 'tradeBank':    return tradeBank(s, playerId, action.give, action.receive);
     case 'tradeOffer':   return tradeOffer(s, playerId, action.to, action.give, action.want);
     case 'tradeRespond': return tradeRespond(s, playerId, action.accept);
+    case 'endTurn': return endTurn(s, playerId);
     default: throw new Error(`unhandled action: ${(action as Action).type}`);
   }
 }
@@ -295,6 +296,19 @@ function tradeRespond(s: State, playerId: PlayerId, accept: boolean): State {
     pushLog(s, playerId, `declined the trade`);
   }
   s.pending = null;
+  return s;
+}
+
+function endTurn(s: State, playerId: PlayerId): State {
+  if (s.currentPlayer !== playerId) throw new Error('not your turn');
+  if (!s.turn.hasRolled) throw new Error('must roll before ending turn');
+  if (s.pending) throw new Error('resolve the pending action first');
+  s.currentPlayer = (s.currentPlayer + 1) % s.config.numPlayers;
+  s.turn = {
+    hasRolled: false, dice: null, devCardPlayedThisTurn: false,
+    turnNumber: s.turn.turnNumber + 1, freeRoads: 0,
+  };
+  pushLog(s, playerId, 'ended their turn');
   return s;
 }
 

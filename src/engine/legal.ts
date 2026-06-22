@@ -103,7 +103,10 @@ function tradeActions(state: State, playerId: PlayerId): Action[] {
   }
   return out;
 }   // Task 15
-function endTurnActions(_state: State, _playerId: PlayerId): Action[] { return []; } // Task 16
+function endTurnActions(state: State, playerId: PlayerId): Action[] {
+  if (playerId !== state.currentPlayer || !state.turn.hasRolled || state.pending) return [];
+  return [{ type: 'endTurn' }];
+}
 
 function mainActions(state: State, playerId: PlayerId): Action[] {
   return [
