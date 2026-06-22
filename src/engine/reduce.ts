@@ -1,14 +1,16 @@
 // src/engine/reduce.ts
 import type { State, PlayerId, Action, NodeId, EdgeId } from './types';
-import { TERRAIN_RESOURCE } from './types';
-import { clone } from './helpers';
+import { TERRAIN_RESOURCE, RESOURCES, type Resource } from './types';
+import { clone, totalCards } from './helpers';
 import { pushLog, updatePorts, distanceOk, roadSpotsFromNode } from './rules';
+import { randInt } from './rng';
 
 export function applyAction(state: State, playerId: PlayerId, action: Action): State {
   const s = clone(state);
   switch (action.type) {
     case 'setupSettlement': return setupSettlement(s, playerId, action.node);
     case 'setupRoad': return setupRoad(s, playerId, action.edge);
+    case 'rollDice': return rollDice(s, playerId);
     default: throw new Error(`unhandled action: ${(action as Action).type}`);
   }
 }
@@ -56,4 +58,49 @@ function setupRoad(s: State, playerId: PlayerId, edge: EdgeId): State {
     s.setup = null;
   }
   return s;
+}
+
+function rollDice(s: State, playerId: PlayerId): State {
+  if (s.currentPlayer !== playerId) throw new Error('not your turn');
+  if (s.turn.hasRolled) throw new Error('already rolled');
+  const r1 = randInt(s.rng, 6); const r2 = randInt(r1.rng, 6);
+  s.rng = r2.rng;
+  const d1 = r1.value + 1, d2 = r2.value + 1, sum = d1 + d2;
+  s.turn.dice = [d1, d2]; s.turn.hasRolled = true;
+  pushLog(s, playerId, `rolled ${sum}`);
+  if (sum === 7) startSeven(s, playerId);
+  else produceResources(s, sum);
+  return s;
+}
+
+function startSeven(s: State, roller: PlayerId): void {
+  const remaining = s.players.filter(p => totalCards(p.resources) > 7).map(p => p.id);
+  s.pending = remaining.length > 0
+    ? { kind: 'discard', remaining }
+    : { kind: 'robber', mover: roller, viaKnight: false };
+}
+
+export function produceResources(s: State, roll: number): void {
+  const demand: Record<Resource, { playerId: PlayerId; amount: number }[]> =
+    { wood: [], brick: [], sheep: [], wheat: [], ore: [] };
+  for (const hex of s.board.hexes) {
+    if (hex.token !== roll || s.board.robberHex === hex.id) continue;
+    const res = TERRAIN_RESOURCE[hex.terrain];
+    if (!res) continue;
+    for (const nid of hex.nodeIds) {
+      const b = s.board.nodes[nid]!.building;
+      if (b) demand[res].push({ playerId: b.owner, amount: b.type === 'city' ? 2 : 1 });
+    }
+  }
+  for (const res of RESOURCES) {
+    const claims = demand[res];
+    if (claims.length === 0) continue;
+    const total = claims.reduce((acc, c) => acc + c.amount, 0);
+    if (total <= s.bank.resources[res]) {
+      for (const c of claims) { s.players[c.playerId]!.resources[res] += c.amount; s.bank.resources[res] -= c.amount; }
+    } else if (new Set(claims.map(c => c.playerId)).size === 1) {
+      const pid = claims[0]!.playerId, give = s.bank.resources[res];
+      s.players[pid]!.resources[res] += give; s.bank.resources[res] = 0;
+    }
+  }
 }
