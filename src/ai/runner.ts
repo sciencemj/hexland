@@ -1,5 +1,5 @@
 // src/ai/runner.ts
-import type { State } from '../engine/types';
+import type { State, Action, PlayerId } from '../engine/types';
 import { getLegalActions, nextActor } from '../engine/legal';
 import { applyAction } from '../engine/reduce';
 import type { Agent } from './agent';
@@ -16,4 +16,14 @@ export function runToCompletion(state: State, agents: Agent[], maxSteps = 50000)
     s = applyAction(s, actor, action);
   }
   return s;
+}
+
+export function aiActionFor(state: State, agents: Agent[]): { actor: PlayerId; action: Action } | null {
+  const actor = nextActor(state);
+  if (actor === null || !state.players[actor]!.isAI) return null;
+  const legal = getLegalActions(state, actor);
+  if (legal.length === 0) return null;
+  const action = agents[actor]!.decide(state, legal, actor);
+  if (action instanceof Promise) return null; // synchronous agents only
+  return { actor, action };
 }
