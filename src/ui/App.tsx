@@ -1,3 +1,152 @@
+// src/ui/App.tsx
+import { useMemo, useState } from 'react';
+import type { State, Action, PlayerId, HexId } from '../engine/types';
+import { createGame } from '../engine/state';
+import { countVictoryPoints } from '../engine/helpers';
+import { requiredDiscardCount } from '../engine/rules';
+import { nextActor } from '../engine/legal';
+import { getAgent } from '../ai/registry';
+import { useGame } from './useGame';
+import { highlightsFor, actionForNode, actionForEdge, robberOptionsForHex, type Mode } from './interaction';
+import { Board } from './components/Board';
+import { PlayerPanel } from './components/PlayerPanel';
+import { HandPanel } from './components/HandPanel';
+import { DiceDisplay } from './components/DiceDisplay';
+import { GameLog } from './components/GameLog';
+import { ActionBar } from './components/ActionBar';
+import { DiscardModal } from './components/DiscardModal';
+import { RobberPrompt } from './components/RobberPrompt';
+import { DevMenu } from './components/DevMenu';
+import { TradePanel } from './components/TradePanel';
+import { NewGameDialog } from './components/NewGameDialog';
+
+// public VP (hides opponents' hidden Victory Point cards)
+function displayVp(state: State, pid: PlayerId, reveal: boolean): number {
+  const full = countVictoryPoints(state, pid);
+  if (reveal) return full;
+  const hidden = state.players[pid]!.devCards.filter(c => c.type === 'victory').length;
+  return full - hidden;
+}
+
 export function App() {
-  return <h1 style={{ padding: 24 }}>Catan — loading…</h1>;
+  const [start, setStart] = useState<{ state: State } | null>(null);
+  if (!start) {
+    return <NewGameDialog onStart={(ai, seed) => setStart({ state: createGame({ numPlayers: 1 + ai, humanCount: 1, seed }) })} />;
+  }
+  return <GameView initial={start.state} onExit={() => setStart(null)} />;
+}
+
+function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
+  const agents = useMemo(() => initial.players.map(() => getAgent('medium')), [initial]);
+  const { state, dispatch, legal } = useGame(initial, agents);
+  const [mode, setMode] = useState<Mode>('idle');
+  const [robberChoice, setRobberChoice] = useState<{ targets: PlayerId[]; byHex: HexId } | null>(null);
+  const [devOpen, setDevOpen] = useState(false);
+  const [tradeOpen, setTradeOpen] = useState(false);
+
+  const human = 0;
+  const actor = nextActor(state);
+  const humanUp = actor === human;
+  const highlights = useMemo(() => highlightsFor(state, legal, mode), [state, legal, mode]);
+
+  const act = (a: Action | null) => { if (a) { dispatch(a); setMode('idle'); } };
+  const onNode = (id: number) => act(actionForNode(state, legal, mode, id));
+  const onEdge = (id: number) => act(actionForEdge(state, legal, mode, id));
+  const onHex = (id: HexId) => {
+    const opts = robberOptionsForHex(state, legal, id);
+    if (opts.length === 1) act(opts[0]!);
+    else if (opts.length > 1) setRobberChoice({ targets: opts.map(o => (o as any).stealFrom).filter((x: any) => x !== null), byHex: id });
+  };
+
+  const has = (t: Action['type']) => legal.some(a => a.type === t);
+  const pendingDiscard = state.pending?.kind === 'discard' && state.pending.remaining.includes(human);
+  const pendingOffer = state.pending?.kind === 'tradeOffer' && state.pending.to === human;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, padding: 16 }}>
+      {/* left column: players + log */}
+      <div>
+        <button onClick={onExit} style={{ marginBottom: 8 }}>↩ New Game</button>
+        {state.players.map(p => (
+          <PlayerPanel key={p.id} player={p}
+            vp={displayVp(state, p.id, p.id === human)}
+            isCurrent={state.currentPlayer === p.id}
+            hasLongestRoad={state.bonuses.longestRoad === p.id}
+            hasLargestArmy={state.bonuses.largestArmy === p.id}
+            reveal={p.id === human} />
+        ))}
+        <GameLog log={state.log} />
+      </div>
+
+      {/* center: board + controls */}
+      <div>
+        <Board state={state} onNode={onNode} onEdge={onEdge} onHex={onHex}
+          highlightNodes={highlights.nodes} highlightEdges={highlights.edges} highlightHexes={highlights.hexes} />
+
+        <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+          <DiceDisplay dice={state.turn.dice} />
+          <HandPanel player={state.players[human]!} />
+          {humanUp && !state.pending && (
+            <ActionBar legal={legal} mode={mode} setMode={setMode}
+              onRoll={() => dispatch({ type: 'rollDice' })}
+              onBuy={() => dispatch({ type: 'buyDevCard' })}
+              onEndTurn={() => dispatch({ type: 'endTurn' })}
+              onTrade={() => setTradeOpen(true)}
+              onPlayDev={() => setDevOpen(true)} />
+          )}
+          {state.phase === 'setup' && humanUp && (
+            <div>Setup: place your {legal[0]?.type === 'setupSettlement' ? 'settlement' : 'road'} (click a highlighted spot).</div>
+          )}
+          {state.pending?.kind === 'robber' && state.pending.mover === human && (
+            <div>Move the robber: click a highlighted hex.</div>
+          )}
+        </div>
+      </div>
+
+      {/* interrupts / overlays */}
+      {pendingDiscard && (
+        <DiscardModal player={state.players[human]!} count={requiredDiscardCount(state, human)}
+          onConfirm={r => dispatch({ type: 'discard', resources: r })} />
+      )}
+      {robberChoice && (
+        <RobberPrompt targets={robberChoice.targets} players={state.players}
+          onPick={t => {
+            const opt = robberOptionsForHex(state, legal, robberChoice.byHex)
+              .find(o => (o as any).stealFrom === t) ?? null;
+            setRobberChoice(null); act(opt);
+          }} />
+      )}
+      {pendingOffer && state.pending?.kind === 'tradeOffer' && (
+        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#24405c', padding: 12, borderRadius: 10 }}>
+          Player {state.pending.from} offers a trade.
+          <button onClick={() => dispatch({ type: 'tradeRespond', accept: true })}>Accept</button>
+          <button onClick={() => dispatch({ type: 'tradeRespond', accept: false })}>Decline</button>
+        </div>
+      )}
+      {devOpen && (
+        <DevMenu
+          playable={{ knight: has('playKnight'), roadBuilding: has('playRoadBuilding'),
+            yearOfPlenty: has('playYearOfPlenty'), monopoly: has('playMonopoly') }}
+          onKnight={() => { setMode('knight'); setDevOpen(false); }}
+          onRoadBuilding={() => { dispatch({ type: 'playRoadBuilding' }); setDevOpen(false); }}
+          onYearOfPlenty={r => { dispatch({ type: 'playYearOfPlenty', resources: r }); setDevOpen(false); }}
+          onMonopoly={r => { dispatch({ type: 'playMonopoly', resource: r }); setDevOpen(false); }}
+          onClose={() => setDevOpen(false)} />
+      )}
+      {tradeOpen && (
+        <TradePanel state={state} human={human}
+          onTradeBank={(g, r) => dispatch({ type: 'tradeBank', give: g, receive: r })}
+          onOffer={(to, give, want) => { dispatch({ type: 'tradeOffer', to, give, want }); setTradeOpen(false); }}
+          onClose={() => setTradeOpen(false)} />
+      )}
+      {state.winner !== null && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'grid', placeItems: 'center', zIndex: 20 }}>
+          <div style={{ background: '#1c2f43', padding: 28, borderRadius: 14, textAlign: 'center' }}>
+            <h1>{state.players[state.winner]!.name} wins! 🏆</h1>
+            <button onClick={onExit}>New Game</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
