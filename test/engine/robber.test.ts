@@ -67,6 +67,18 @@ test('robber must move to a different hex and steals from an adjacent opponent',
   expect(after.pending).toBeNull();
 });
 
+test('must steal when a valid target exists at the destination hex', () => {
+  const s: any = freshPlay();
+  const roller = s.currentPlayer;
+  const targetHex = s.board.hexes.find((h: any) => h.id !== s.board.robberHex)!;
+  const opp = (roller + 1) % 4;
+  s.board.nodes[targetHex.nodeIds[0]].building = { type: 'settlement', owner: opp };
+  s.players[opp].resources = { wood: 1, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+  s.pending = { kind: 'robber', mover: roller, viaKnight: false };
+  s.turn.hasRolled = true;
+  expect(() => applyAction(s, roller, { type: 'moveRobber', hex: targetHex.id, stealFrom: null })).toThrow('must steal when a valid target exists');
+});
+
 test('cannot leave the robber on its current hex', () => {
   const s: any = freshPlay();
   const roller = s.currentPlayer;

@@ -101,6 +101,8 @@ function moveRobber(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerI
   if (s.pending?.kind !== 'robber' || s.pending.mover !== playerId) throw new Error('no robber move pending');
   if (hex === s.board.robberHex) throw new Error('robber must move to a different hex');
   s.board.robberHex = hex;
+  if (stealFrom === null && adjacentStealTargets(s, hex, playerId).length > 0)
+    throw new Error('must steal when a valid target exists');
   if (stealFrom !== null) {
     if (!adjacentStealTargets(s, hex, playerId).includes(stealFrom)) throw new Error('illegal steal target');
     stealCard(s, stealFrom, playerId);
