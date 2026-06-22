@@ -1,3 +1,5 @@
+export {};
+
 async function build() {
   const r = await Bun.build({
     entrypoints: ['src/ui/main.tsx'],
