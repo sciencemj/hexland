@@ -19,6 +19,7 @@ import { RobberPrompt } from './components/RobberPrompt';
 import { DevMenu } from './components/DevMenu';
 import { TradePanel } from './components/TradePanel';
 import { NewGameDialog } from './components/NewGameDialog';
+import { InfoPanel } from './components/InfoPanel';
 
 // public VP (hides opponents' hidden Victory Point cards)
 function displayVp(state: State, pid: PlayerId, reveal: boolean): number {
@@ -63,7 +64,7 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
   const pendingOffer = state.pending?.kind === 'tradeOffer' && state.pending.to === human;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16, padding: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 340px', gap: 16, padding: 16 }}>
       {/* left column: players + log */}
       <div>
         <button onClick={onExit} style={{ marginBottom: 8 }}>↩ New Game</button>
@@ -102,6 +103,9 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
           )}
         </div>
       </div>
+
+      {/* right column: win conditions, tips, public opponent info */}
+      <InfoPanel state={state} human={human} />
 
       {/* interrupts / overlays */}
       {pendingDiscard && (
