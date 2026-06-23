@@ -9,13 +9,12 @@ export interface FxEvents {
   dice: [number, number] | null;
   newRoads: EdgeId[];
   newBuildings: { node: NodeId; type: 'settlement' | 'city' }[];
-  humanGains: { hex: HexLike; resource: Resource }[]; // one entry per card produced for the human
+  gains: { player: PlayerId; hex: number; resource: Resource }[]; // one entry per card produced, any player
   robberMoved: boolean;
   devCardBought: boolean;
 }
-type HexLike = number;
 
-export function computeFx(prev: State, cur: State, human: PlayerId): FxEvents {
+export function computeFx(prev: State, cur: State): FxEvents {
   const cd = cur.turn.dice;
   const diceRolled = !!cd && !prev.turn.dice; // dice goes null -> value exactly once per roll
   const sum = cd ? cd[0] + cd[1] : 0;
@@ -29,8 +28,8 @@ export function computeFx(prev: State, cur: State, human: PlayerId): FxEvents {
     if (cb && (!pb || pb.type !== cb.type)) newBuildings.push({ node: n.id, type: cb.type });
   }
 
-  // Resources the human harvested this roll, sourced from the producing tiles.
-  const humanGains: { hex: HexLike; resource: Resource }[] = [];
+  // Resources every player harvested this roll, sourced from the producing tiles.
+  const gains: { player: PlayerId; hex: number; resource: Resource }[] = [];
   if (diceRolled && sum !== 7) {
     for (const hex of cur.board.hexes) {
       if (hex.token !== sum || cur.board.robberHex === hex.id) continue;
@@ -38,9 +37,9 @@ export function computeFx(prev: State, cur: State, human: PlayerId): FxEvents {
       if (!res) continue;
       for (const nid of hex.nodeIds) {
         const b = cur.board.nodes[nid]!.building;
-        if (b && b.owner === human) {
+        if (b) {
           const amt = b.type === 'city' ? 2 : 1;
-          for (let i = 0; i < amt; i++) humanGains.push({ hex: hex.id, resource: res });
+          for (let i = 0; i < amt; i++) gains.push({ player: b.owner, hex: hex.id, resource: res });
         }
       }
     }
@@ -50,5 +49,5 @@ export function computeFx(prev: State, cur: State, human: PlayerId): FxEvents {
   const devCardBought = cur.players[cur.currentPlayer]!.devCards.length
     > (prev.players[cur.currentPlayer]?.devCards.length ?? 0);
 
-  return { diceRolled, dice: cd, newRoads, newBuildings, humanGains, robberMoved, devCardBought };
+  return { diceRolled, dice: cd, newRoads, newBuildings, gains, robberMoved, devCardBought };
 }

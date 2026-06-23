@@ -22,6 +22,7 @@ import { NewGameDialog } from './components/NewGameDialog';
 import { InfoPanel } from './components/InfoPanel';
 import { LanguageToggle } from './components/LanguageToggle';
 import { SoundToggle } from './components/SoundToggle';
+import { SpeedToggle, loadAiDelay } from './components/SpeedToggle';
 import { useI18n, displayName } from './i18n';
 import { useGameFx } from './useGameFx';
 import { playSfx } from './sound';
@@ -44,8 +45,9 @@ export function App() {
 
 function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
   const { t } = useI18n();
+  const [aiDelay, setAiDelay] = useState<number>(loadAiDelay);
   const agents = useMemo(() => initial.players.map(() => getAgent('medium')), [initial]);
-  const { state, dispatch, legal } = useGame(initial, agents);
+  const { state, dispatch, legal } = useGame(initial, agents, aiDelay);
   const [mode, setMode] = useState<Mode>('idle');
   const [robberChoice, setRobberChoice] = useState<{ targets: PlayerId[]; byHex: HexId } | null>(null);
   const [devOpen, setDevOpen] = useState(false);
@@ -77,6 +79,7 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <button onClick={onExit}>{t('app.newGame')}</button>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <SpeedToggle value={aiDelay} onChange={setAiDelay} />
             <SoundToggle />
             <LanguageToggle />
           </div>

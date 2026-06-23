@@ -10,7 +10,7 @@ interface Props {
 export function PlayerPanel({ player, vp, isCurrent, hasLongestRoad, hasLargestArmy, reveal }: Props) {
   const { t } = useI18n();
   return (
-    <div style={{ padding: 8, borderRadius: 8, marginBottom: 6,
+    <div data-player={player.id} style={{ padding: 8, borderRadius: 8, marginBottom: 6,
       background: isCurrent ? '#24405c' : '#1c2f43', border: `2px solid ${player.color}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
         <span><span style={{ color: player.color }}>●</span> {displayName(t, player.name)}{player.isAI ? ' 🤖' : ''}</span>

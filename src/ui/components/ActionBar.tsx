@@ -27,7 +27,8 @@ export function ActionBar({ legal, mode, setMode, onRoll, onBuy, onEndTurn, onTr
       {btn(t('action.city'), toggle('city'), has('buildCity'), mode === 'city')}
       {btn(t('action.buyDev'), onBuy, has('buyDevCard'))}
       {btn(t('action.playDev'), onPlayDev, has('playKnight') || has('playRoadBuilding') || has('playYearOfPlenty') || has('playMonopoly'))}
-      {btn(t('action.trade'), onTrade, has('tradeBank'))}
+      {/* trade is open in the whole main phase (endTurn legal), not only when a 4:1 bank trade is affordable */}
+      {btn(t('action.trade'), onTrade, has('tradeBank') || has('endTurn'))}
       {btn(t('action.endTurn'), onEndTurn, has('endTurn'))}
     </div>
   );

@@ -17,15 +17,15 @@ function safeApply(s: State, actor: number, action: Action): State {
   }
 }
 
-export function useGame(initial: State, agents: Agent[]) {
+export function useGame(initial: State, agents: Agent[], aiDelayMs = 700) {
   const [state, setState] = useState<State>(initial);
 
   useEffect(() => {
     const next = aiActionFor(state, agents);
     if (!next) return;
-    const t = setTimeout(() => setState(s => safeApply(s, next.actor, next.action)), 600);
+    const t = setTimeout(() => setState(s => safeApply(s, next.actor, next.action)), aiDelayMs);
     return () => clearTimeout(t);
-  }, [state, agents]);
+  }, [state, agents, aiDelayMs]);
 
   const actor = nextActor(state);
   const humanUp = actor !== null && !state.players[actor]!.isAI;

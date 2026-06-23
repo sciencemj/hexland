@@ -38,6 +38,14 @@
       }
       .fx-chip-pop { animation: chipPop 0.45s ease-out; }
 
+      /* opponent panel flashes when a resource lands in it */
+      @keyframes panelPop {
+        0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(124,255,180,0); }
+        35%  { transform: scale(1.04); box-shadow: 0 0 0 3px rgba(124,255,180,0.5); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(124,255,180,0); }
+      }
+      .fx-panel-pop { animation: panelPop 0.5s ease-out; }
+
       /* flying resource token */
       .fx-fly { position: fixed; z-index: 50; pointer-events: none; font-size: 20px;
         filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); will-change: transform, opacity; }
