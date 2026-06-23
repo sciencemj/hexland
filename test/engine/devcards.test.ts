@@ -107,4 +107,7 @@ test('Knight moves the robber, steals, increments played knights, and may be pla
   expect(g.board.robberHex).toBe(targetHex.id);
   expect(g.players[p].resources.wood).toBe(1);
   expect(g.turn.devCardPlayedThisTurn).toBe(true);
+  // the knight steal must be visible in the log (not silent)
+  expect(g.log[g.log.length - 1].text).toContain('Knight');
+  expect(g.log[g.log.length - 1].text).toContain('stole from');
 });

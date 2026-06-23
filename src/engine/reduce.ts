@@ -128,7 +128,7 @@ function moveRobber(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerI
   if (s.pending?.kind !== 'robber' || s.pending.mover !== playerId) throw new Error('no robber move pending');
   resolveRobber(s, playerId, hex, stealFrom);
   s.pending = null;
-  pushLog(s, playerId, 'moved the robber' + (stealFrom !== null ? ` and stole from player ${stealFrom}` : ''));
+  pushLog(s, playerId, 'moved the robber' + (stealFrom !== null ? ` and stole from ${s.players[stealFrom]!.name}` : ''));
   return s;
 }
 
@@ -180,7 +180,7 @@ function playKnight(s: State, playerId: PlayerId, hex: HexId, stealFrom: PlayerI
   markPlayed(s, playerId, 'knight');
   s.players[playerId]!.playedKnights += 1;
   resolveRobber(s, playerId, hex, stealFrom);
-  pushLog(s, playerId, 'played a Knight');
+  pushLog(s, playerId, 'played a Knight' + (stealFrom !== null ? ` and stole from ${s.players[stealFrom]!.name}` : ''));
   recomputeArmy(s);
   maybeWin(s);
   return s;
