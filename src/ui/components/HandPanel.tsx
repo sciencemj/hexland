@@ -8,7 +8,7 @@ export function HandPanel({ player }: { player: Player }) {
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
       {RESOURCES.map(r => (
-        <span key={r} style={{ padding: '4px 8px', borderRadius: 6, background: '#2a4660' }}>
+        <span key={r} data-res={r} style={{ padding: '4px 8px', borderRadius: 6, background: '#2a4660', display: 'inline-block' }}>
           {tRes(t, r)}: <b>{player.resources[r]}</b>
         </span>
       ))}

@@ -22,6 +22,7 @@ import { NewGameDialog } from './components/NewGameDialog';
 import { InfoPanel } from './components/InfoPanel';
 import { LanguageToggle } from './components/LanguageToggle';
 import { useI18n, displayName } from './i18n';
+import { useGameFx } from './useGameFx';
 
 // public VP (hides opponents' hidden Victory Point cards)
 function displayVp(state: State, pid: PlayerId, reveal: boolean): number {
@@ -49,6 +50,7 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
   const [tradeOpen, setTradeOpen] = useState(false);
 
   const human = 0;
+  const { diceRollKey, recentEdges, recentNodes } = useGameFx(state, human);
   const actor = nextActor(state);
   const humanUp = actor === human;
   const highlights = useMemo(() => highlightsFor(state, legal, mode), [state, legal, mode]);
@@ -88,10 +90,11 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
       {/* center: board + controls */}
       <div>
         <Board state={state} onNode={onNode} onEdge={onEdge} onHex={onHex}
-          highlightNodes={highlights.nodes} highlightEdges={highlights.edges} highlightHexes={highlights.hexes} />
+          highlightNodes={highlights.nodes} highlightEdges={highlights.edges} highlightHexes={highlights.hexes}
+          recentEdges={recentEdges} recentNodes={recentNodes} />
 
         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-          <DiceDisplay dice={state.turn.dice} />
+          <DiceDisplay dice={state.turn.dice} rollKey={diceRollKey} />
           <HandPanel player={state.players[human]!} />
           {humanUp && !state.pending && (
             <ActionBar legal={legal} mode={mode} setMode={setMode}

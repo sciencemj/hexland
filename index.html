@@ -8,6 +8,39 @@
       :root { color-scheme: light; }
       body { margin: 0; font-family: system-ui, sans-serif; background: #1b2a3a; color: #eee; }
       #root { min-height: 100vh; }
+
+      /* a freshly placed road/settlement/city drops in from above */
+      @keyframes pieceDrop {
+        0%   { transform: translateY(-34px); opacity: 0; }
+        55%  { transform: translateY(0);     opacity: 1; }
+        70%  { transform: translateY(0) scaleY(0.82) scaleX(1.08); }
+        85%  { transform: translateY(0) scaleY(1.05) scaleX(0.97); }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      /* SVG pieces tagged with this animate around their own center */
+      .fx-drop { transform-box: fill-box; transform-origin: center bottom; animation: pieceDrop 0.5s cubic-bezier(.2,.7,.3,1) both; }
+
+      /* dice tumble while rolling */
+      @keyframes diceTumble {
+        0%   { transform: rotate(0deg)   translateY(0); }
+        20%  { transform: rotate(-110deg) translateY(-8px); }
+        45%  { transform: rotate(120deg) translateY(-3px); }
+        70%  { transform: rotate(-70deg) translateY(-5px); }
+        100% { transform: rotate(0deg)   translateY(0); }
+      }
+      .fx-dice-rolling { animation: diceTumble 0.16s linear infinite; }
+
+      /* hand-count chip pulses when a resource lands */
+      @keyframes chipPop {
+        0%   { transform: scale(1); }
+        40%  { transform: scale(1.4); background: #3a6a86; }
+        100% { transform: scale(1); }
+      }
+      .fx-chip-pop { animation: chipPop 0.45s ease-out; }
+
+      /* flying resource token */
+      .fx-fly { position: fixed; z-index: 50; pointer-events: none; font-size: 20px;
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); will-change: transform, opacity; }
     </style>
   </head>
   <body>

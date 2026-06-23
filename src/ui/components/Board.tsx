@@ -21,10 +21,12 @@ const PIP: Record<number, number> = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 
 interface BoardProps {
   state: State;
   highlightNodes?: NodeId[]; highlightEdges?: EdgeId[]; highlightHexes?: HexId[];
+  recentEdges?: Set<EdgeId>; recentNodes?: Set<NodeId>;
   onNode?: (id: NodeId) => void; onEdge?: (id: EdgeId) => void; onHex?: (id: HexId) => void;
 }
 
-export function Board({ state, highlightNodes = [], highlightEdges = [], highlightHexes = [], onNode, onEdge, onHex }: BoardProps) {
+export function Board({ state, highlightNodes = [], highlightEdges = [], highlightHexes = [],
+  recentEdges, recentNodes, onNode, onEdge, onHex }: BoardProps) {
   const colorOf = (owner: number) => state.players[owner]!.color;
   const hlN = new Set(highlightNodes), hlE = new Set(highlightEdges), hlH = new Set(highlightHexes);
 
@@ -75,7 +77,7 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
         const pips = h.token ? PIP[h.token] ?? 0 : 0;
         return (
           <g key={`h${h.id}`}>
-            <polygon points={hexPolygon(h.id)} fill={`url(#t-${h.terrain})`}
+            <polygon data-hex={h.id} points={hexPolygon(h.id)} fill={`url(#t-${h.terrain})`}
               stroke="#0b1d2b" strokeWidth={1.5} strokeLinejoin="round" filter="url(#hexShadow)" />
             {/* top sheen for a lit, raised feel */}
             <polygon points={hexPolygon(h.id)} fill="url(#gloss)" pointerEvents="none" />
@@ -120,7 +122,7 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
           // No SVG filter here: a <line> has a degenerate (1-D) bounding box, which
           // makes an objectBoundingBox filter region collapse and renders nothing in
           // WebKit/WKWebView. The dark underlay line below is the road's outline/depth.
-          <g key={`e${e.id}`}>
+          <g key={`e${e.id}`} className={recentEdges?.has(e.id) ? 'fx-drop' : undefined}>
             <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="#0b1d2b" strokeWidth={9} strokeLinecap="round" />
             <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={colorOf(e.road.owner)} strokeWidth={6} strokeLinecap="round" />
           </g>
@@ -144,10 +146,11 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
         const p = nodePoint(n.id);
         if (n.building) {
           const fill = colorOf(n.building.owner);
+          const dropClass = recentNodes?.has(n.id) ? 'fx-drop' : undefined;
           if (n.building.type === 'city') {
             // a chunkier two-block silhouette
             return (
-              <g key={`n${n.id}`} filter="url(#pieceShadow)">
+              <g key={`n${n.id}`} className={dropClass} filter="url(#pieceShadow)">
                 <rect x={p.x - 9} y={p.y - 4} width={18} height={13} rx={2} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} />
                 <rect x={p.x - 9} y={p.y - 11} width={9} height={9} rx={1.5} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} />
                 <rect x={p.x - 9} y={p.y - 4} width={18} height={3} fill="rgba(255,255,255,0.25)" />
@@ -157,7 +160,7 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
           // settlement: little house
           const house = `${p.x},${p.y - 9} ${p.x + 7},${p.y - 3} ${p.x + 7},${p.y + 7} ${p.x - 7},${p.y + 7} ${p.x - 7},${p.y - 3}`;
           return (
-            <g key={`n${n.id}`} filter="url(#pieceShadow)">
+            <g key={`n${n.id}`} className={dropClass} filter="url(#pieceShadow)">
               <polygon points={house} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} strokeLinejoin="round" />
               <polygon points={`${p.x},${p.y - 9} ${p.x + 7},${p.y - 3} ${p.x - 7},${p.y - 3}`} fill="rgba(255,255,255,0.28)" />
             </g>
