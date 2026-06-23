@@ -122,8 +122,17 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
             <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={colorOf(e.road.owner)} strokeWidth={6} strokeLinecap="round" />
           </g>
         );
-        if (hlE.has(e.id)) return <line key={`e${e.id}`} data-edge-hl x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
-          stroke="#ffffff" strokeWidth={6} strokeDasharray="4 4" style={{ cursor: 'pointer' }} onClick={() => onEdge?.(e.id)} />;
+        if (hlE.has(e.id)) return (
+          <g key={`e${e.id}`}>
+            {/* visible dashed marker */}
+            <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+              stroke="#ffffff" strokeWidth={6} strokeDasharray="4 4" pointerEvents="none" />
+            {/* wide invisible hit target so the road is easy to click */}
+            <line data-edge-hl x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2}
+              stroke="transparent" strokeWidth={18} strokeLinecap="round"
+              pointerEvents="all" style={{ cursor: 'pointer' }} onClick={() => onEdge?.(e.id)} />
+          </g>
+        );
         return null;
       })}
 
