@@ -35,11 +35,11 @@ test('a component inside LangProvider (default EN here) renders translated label
   // No navigator in the test env → defaults to EN.
   const html = renderToString(
     <LangProvider>
-      <ActionBar legal={[{ type: 'endTurn' }]} mode="idle" setMode={() => {}}
-        onBuy={() => {}} onEndTurn={() => {}} onTrade={() => {}} onPlayDev={() => {}} />
+      <ActionBar legal={[{ type: 'buyDevCard' }]} mode="idle" setMode={() => {}}
+        onBuy={() => {}} onTrade={() => {}} onPlayDev={() => {}} />
     </LangProvider>,
   );
-  expect(html).toContain('End Turn');
+  expect(html).toContain('Buy Dev');
 });
 
 // sanity: the provider's hook is wired

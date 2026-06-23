@@ -104,7 +104,7 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
       <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <DiceDisplay dice={state.turn.dice} rollKey={diceRollKey} />
-          {/* fixed-height slot so the cards below never shift between pre/post roll */}
+          {/* fixed-height slot: Roll before the roll, End Turn after (mutually exclusive) */}
           <div style={{ height: 48, display: 'flex', alignItems: 'center' }}>
             {humanUp && has('rollDice') && (
               <button onClick={() => dispatch({ type: 'rollDice' })}
@@ -114,13 +114,20 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
                 {t('action.roll')}
               </button>
             )}
+            {humanUp && has('endTurn') && (
+              <button onClick={() => dispatch({ type: 'endTurn' })}
+                style={{ padding: '12px 32px', fontSize: 18, fontWeight: 800, borderRadius: 12, cursor: 'pointer',
+                  background: 'linear-gradient(#5aa57e,#3f8061)', color: '#0f1f17', border: 'none',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.45)' }}>
+                {t('action.endTurn')}
+              </button>
+            )}
           </div>
         </div>
         <HandPanel player={state.players[human]!} />
         {humanUp && !state.pending && (
           <ActionBar legal={legal} mode={mode} setMode={setMode}
             onBuy={() => dispatch({ type: 'buyDevCard' })}
-            onEndTurn={() => dispatch({ type: 'endTurn' })}
             onTrade={() => setTradeOpen(true)}
             onPlayDev={() => setDevOpen(true)} />
         )}

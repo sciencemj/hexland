@@ -5,10 +5,9 @@ import { useI18n } from '../i18n';
 
 interface Props {
   legal: Action[]; mode: Mode; setMode: (m: Mode) => void;
-  onBuy: () => void; onEndTurn: () => void;
-  onTrade: () => void; onPlayDev: () => void;
+  onBuy: () => void; onTrade: () => void; onPlayDev: () => void;
 }
-export function ActionBar({ legal, mode, setMode, onBuy, onEndTurn, onTrade, onPlayDev }: Props) {
+export function ActionBar({ legal, mode, setMode, onBuy, onTrade, onPlayDev }: Props) {
   const { t } = useI18n();
   const has = (type: Action['type']) => legal.some(a => a.type === type);
   const btn = (label: string, on: () => void, enabled: boolean, active = false) => (
@@ -28,7 +27,6 @@ export function ActionBar({ legal, mode, setMode, onBuy, onEndTurn, onTrade, onP
       {btn(t('action.playDev'), onPlayDev, has('playKnight') || has('playRoadBuilding') || has('playYearOfPlenty') || has('playMonopoly'))}
       {/* trade is open in the whole main phase (endTurn legal), not only when a 4:1 bank trade is affordable */}
       {btn(t('action.trade'), onTrade, has('tradeBank') || has('endTurn'))}
-      {btn(t('action.endTurn'), onEndTurn, has('endTurn'))}
     </div>
   );
 }
