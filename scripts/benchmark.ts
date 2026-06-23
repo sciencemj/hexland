@@ -11,11 +11,12 @@ import type { Agent } from '../src/ai/agent';
 
 const GAMES = Number(process.argv[2] ?? 16);
 const MCTS_ITERS = Number(process.argv[3] ?? 80);
+const MCTS_DEPTH = Number(process.argv[4] ?? 50);
 
 const lookA = makeLookaheadAgent(DEFAULT_WEIGHTS);
-const mcts = makeMctsAgent(MCTS_ITERS, { depthCap: 50 });
+const mcts = makeMctsAgent(MCTS_ITERS, { depthCap: MCTS_DEPTH });
 
-const NAMES = [`mcts(${MCTS_ITERS})`, 'lookahead', 'medium', 'random'];
+const NAMES = [`mcts(${MCTS_ITERS}/${MCTS_DEPTH})`, 'lookahead', 'medium', 'random'];
 const AGENTS: Agent[] = [mcts, lookA, heuristicAgent, randomAgent];
 const N = 4;
 
