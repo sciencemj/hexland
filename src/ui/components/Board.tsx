@@ -141,32 +141,38 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
         return null;
       })}
 
-      {/* buildings */}
+      {/* buildings + clickable target rings */}
       {state.board.nodes.map(n => {
         const p = nodePoint(n.id);
+        const hl = hlN.has(n.id);
         if (n.building) {
           const fill = colorOf(n.building.owner);
           const dropClass = recentNodes?.has(n.id) ? 'fx-drop' : undefined;
-          if (n.building.type === 'city') {
-            // a chunkier two-block silhouette
-            return (
-              <g key={`n${n.id}`} className={dropClass} filter="url(#pieceShadow)">
-                <rect x={p.x - 9} y={p.y - 4} width={18} height={13} rx={2} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} />
-                <rect x={p.x - 9} y={p.y - 11} width={9} height={9} rx={1.5} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} />
-                <rect x={p.x - 9} y={p.y - 4} width={18} height={3} fill="rgba(255,255,255,0.25)" />
-              </g>
-            );
-          }
-          // settlement: little house
           const house = `${p.x},${p.y - 9} ${p.x + 7},${p.y - 3} ${p.x + 7},${p.y + 7} ${p.x - 7},${p.y + 7} ${p.x - 7},${p.y - 3}`;
-          return (
-            <g key={`n${n.id}`} className={dropClass} filter="url(#pieceShadow)">
+          const piece = n.building.type === 'city' ? (
+            <g className={dropClass} filter="url(#pieceShadow)">
+              <rect x={p.x - 9} y={p.y - 4} width={18} height={13} rx={2} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} />
+              <rect x={p.x - 9} y={p.y - 11} width={9} height={9} rx={1.5} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} />
+              <rect x={p.x - 9} y={p.y - 4} width={18} height={3} fill="rgba(255,255,255,0.25)" />
+            </g>
+          ) : (
+            <g className={dropClass} filter="url(#pieceShadow)">
               <polygon points={house} fill={fill} stroke="#0b1d2b" strokeWidth={1.5} strokeLinejoin="round" />
               <polygon points={`${p.x},${p.y - 9} ${p.x + 7},${p.y - 3} ${p.x - 7},${p.y - 3}`} fill="rgba(255,255,255,0.28)" />
             </g>
           );
+          return (
+            <g key={`n${n.id}`}>
+              {piece}
+              {/* a node that's a legal target (e.g. upgrading this settlement to a city) gets a clickable ring */}
+              {hl && (
+                <circle data-node-hl cx={p.x} cy={p.y} r={15} fill="rgba(44,255,180,0.18)"
+                  stroke="#2cffb4" strokeWidth={3} style={{ cursor: 'pointer' }} onClick={() => onNode?.(n.id)} />
+              )}
+            </g>
+          );
         }
-        if (hlN.has(n.id)) return <circle key={`n${n.id}`} data-node-hl cx={p.x} cy={p.y} r={9}
+        if (hl) return <circle key={`n${n.id}`} data-node-hl cx={p.x} cy={p.y} r={9}
           fill="rgba(255,255,255,0.85)" stroke="#2c8" strokeWidth={3} style={{ cursor: 'pointer' }} onClick={() => onNode?.(n.id)} />;
         return null;
       })}
