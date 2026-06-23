@@ -7,6 +7,7 @@ import type { State, PlayerId, Resource } from '../engine/types';
 import { RESOURCES, TERRAIN_RESOURCE } from '../engine/types';
 import { COSTS, canAfford, totalCards } from '../engine/helpers';
 import { longestRoadLength } from '../engine/roads';
+import { tRes, type TFn } from './i18n';
 
 // Number of dice combinations that roll each token (probability proxy).
 const PIP: Record<number, number> = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1 };
@@ -47,33 +48,34 @@ export function publicVictoryPoints(state: State, playerId: PlayerId): number {
   return vp;
 }
 
-// Situational advice based on the human's current state.
-export function contextualTips(state: State, playerId: PlayerId): string[] {
+// Situational advice based on the human's current state, returned already
+// translated via the supplied t(). Tip text lives in the i18n dictionary.
+export function contextualTips(state: State, playerId: PlayerId, t: TFn): string[] {
   const tips: string[] = [];
   if (state.phase === 'setup') {
-    tips.push('Place on intersections touching high-roll numbers (6 & 8 are most likely) and varied resources.');
-    tips.push('Your SECOND settlement grants one card per adjacent hex — favor strong spots there.');
+    tips.push(t('tip.setup1'));
+    tips.push(t('tip.setup2'));
     return tips;
   }
   const p = state.players[playerId]!;
   const cards = totalCards(p.resources);
 
-  if (cards > 7) tips.push(`⚠️ You hold ${cards} cards — a rolled 7 makes you discard ${Math.floor(cards / 2)}. Spend or trade down.`);
+  if (cards > 7) tips.push(t('tip.discard', { cards, n: Math.floor(cards / 2) }));
 
-  if (canAfford(p.resources, COSTS.city)) tips.push('You can upgrade a settlement to a city (+1 VP, double its production).');
-  else if (canAfford(p.resources, COSTS.settlement)) tips.push('You can build a settlement (+1 VP) on a spot touching your road.');
-  if (canAfford(p.resources, COSTS.devCard)) tips.push('You can buy a development card (Knight, Victory Point, or a progress card).');
+  if (canAfford(p.resources, COSTS.city)) tips.push(t('tip.canCity'));
+  else if (canAfford(p.resources, COSTS.settlement)) tips.push(t('tip.canSettlement'));
+  if (canAfford(p.resources, COSTS.devCard)) tips.push(t('tip.canDev'));
 
   if (state.bonuses.largestArmy !== playerId && p.playedKnights >= 2)
-    tips.push(`Play 1 more Knight to ${state.bonuses.largestArmy === null ? 'claim' : 'seize'} Largest Army (+2 VP).`);
+    tips.push(t(state.bonuses.largestArmy === null ? 'tip.knightClaim' : 'tip.knightSeize'));
 
   if (state.bonuses.longestRoad !== playerId && longestRoadLength(state, playerId) === 4)
-    tips.push('One more connected road could earn Longest Road (need the longest, 5+).');
+    tips.push(t('tip.longestRoad'));
 
   const produced = new Set(productionProfile(state, playerId).map(e => e.resource));
   const missing = RESOURCES.filter(r => !produced.has(r));
-  if (missing.length) tips.push(`You produce no ${missing.join('/')}. Trade for it or build toward a matching port.`);
+  if (missing.length) tips.push(t('tip.missing', { list: missing.map(r => tRes(t, r)).join('/') }));
 
-  if (tips.length === 0) tips.push('Roll, then trade and build. First to 10 VP wins.');
+  if (tips.length === 0) tips.push(t('tip.default'));
   return tips;
 }

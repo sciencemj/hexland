@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Resource } from '../../engine/types';
 import { RESOURCES } from '../../engine/types';
 import { Modal } from './Modal';
+import { useI18n, tRes } from '../i18n';
 
 interface Props {
   playable: { knight: boolean; roadBuilding: boolean; yearOfPlenty: boolean; monopoly: boolean };
@@ -9,33 +10,34 @@ interface Props {
   onYearOfPlenty: (r: [Resource, Resource]) => void; onMonopoly: (r: Resource) => void; onClose: () => void;
 }
 export function DevMenu({ playable, onKnight, onRoadBuilding, onYearOfPlenty, onMonopoly, onClose }: Props) {
+  const { t } = useI18n();
   const [yop, setYop] = useState<Resource[]>([]);
   return (
     <Modal>
-      <h3 style={{ marginTop: 0 }}>Play a development card</h3>
+      <h3 style={{ marginTop: 0 }}>{t('dev.title')}</h3>
       <div style={{ display: 'grid', gap: 8 }}>
-        {playable.knight && <button onClick={onKnight}>Knight (move robber)</button>}
-        {playable.roadBuilding && <button onClick={onRoadBuilding}>Road Building (2 free roads)</button>}
+        {playable.knight && <button onClick={onKnight}>{t('dev.knight')}</button>}
+        {playable.roadBuilding && <button onClick={onRoadBuilding}>{t('dev.roadBuilding')}</button>}
         {playable.monopoly && (
           <div>
-            Monopoly:{' '}
-            {RESOURCES.map(r => <button key={r} onClick={() => onMonopoly(r)}>{r}</button>)}
+            {t('dev.monopoly')}{' '}
+            {RESOURCES.map(r => <button key={r} onClick={() => onMonopoly(r)}>{tRes(t, r)}</button>)}
           </div>
         )}
         {playable.yearOfPlenty && (
           <div>
-            Year of Plenty (pick 2):{' '}
+            {t('dev.yearOfPlenty')}{' '}
             {RESOURCES.map(r => (
               <button key={r} onClick={() => {
                 const next = [...yop, r];
                 if (next.length === 2) onYearOfPlenty([next[0]!, next[1]!]);
                 else setYop(next);
-              }}>{r}{yop.includes(r) ? '✓' : ''}</button>
+              }}>{tRes(t, r)}{yop.includes(r) ? '✓' : ''}</button>
             ))}
-            <span> chosen: {yop.join(', ')}</span>
+            <span> {t('dev.chosen', { list: yop.map(r => tRes(t, r)).join(', ') })}</span>
           </div>
         )}
-        <button onClick={onClose}>Cancel</button>
+        <button onClick={onClose}>{t('dev.cancel')}</button>
       </div>
     </Modal>
   );

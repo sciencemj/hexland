@@ -20,6 +20,8 @@ import { DevMenu } from './components/DevMenu';
 import { TradePanel } from './components/TradePanel';
 import { NewGameDialog } from './components/NewGameDialog';
 import { InfoPanel } from './components/InfoPanel';
+import { LanguageToggle } from './components/LanguageToggle';
+import { useI18n, displayName } from './i18n';
 
 // public VP (hides opponents' hidden Victory Point cards)
 function displayVp(state: State, pid: PlayerId, reveal: boolean): number {
@@ -38,6 +40,7 @@ export function App() {
 }
 
 function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
+  const { t } = useI18n();
   const agents = useMemo(() => initial.players.map(() => getAgent('medium')), [initial]);
   const { state, dispatch, legal } = useGame(initial, agents);
   const [mode, setMode] = useState<Mode>('idle');
@@ -59,7 +62,7 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
     else if (opts.length > 1) setRobberChoice({ targets: opts.map(o => (o as any).stealFrom).filter((x: any) => x !== null), byHex: id });
   };
 
-  const has = (t: Action['type']) => legal.some(a => a.type === t);
+  const has = (type: Action['type']) => legal.some(a => a.type === type);
   const pendingDiscard = state.pending?.kind === 'discard' && state.pending.remaining.includes(human);
   const pendingOffer = state.pending?.kind === 'tradeOffer' && state.pending.to === human;
 
@@ -67,7 +70,10 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
     <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 340px', gap: 16, padding: 16 }}>
       {/* left column: players + log */}
       <div>
-        <button onClick={onExit} style={{ marginBottom: 8 }}>↩ New Game</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <button onClick={onExit}>{t('app.newGame')}</button>
+          <LanguageToggle />
+        </div>
         {state.players.map(p => (
           <PlayerPanel key={p.id} player={p}
             vp={displayVp(state, p.id, p.id === human)}
@@ -96,10 +102,10 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
               onPlayDev={() => setDevOpen(true)} />
           )}
           {state.phase === 'setup' && humanUp && (
-            <div>Setup: place your {legal[0]?.type === 'setupSettlement' ? 'settlement' : 'road'} (click a highlighted spot).</div>
+            <div>{t(legal[0]?.type === 'setupSettlement' ? 'app.setupSettlement' : 'app.setupRoad')}</div>
           )}
           {state.pending?.kind === 'robber' && state.pending.mover === human && (
-            <div>Move the robber: click a highlighted hex.</div>
+            <div>{t('app.moveRobber')}</div>
           )}
         </div>
       </div>
@@ -114,17 +120,17 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
       )}
       {robberChoice && (
         <RobberPrompt targets={robberChoice.targets} players={state.players}
-          onPick={t => {
+          onPick={pid => {
             const opt = robberOptionsForHex(state, legal, robberChoice.byHex)
-              .find(o => (o as any).stealFrom === t) ?? null;
+              .find(o => (o as any).stealFrom === pid) ?? null;
             setRobberChoice(null); act(opt);
           }} />
       )}
       {pendingOffer && state.pending?.kind === 'tradeOffer' && (
-        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#24405c', padding: 12, borderRadius: 10 }}>
-          Player {state.pending.from} offers a trade.
-          <button onClick={() => dispatch({ type: 'tradeRespond', accept: true })}>Accept</button>
-          <button onClick={() => dispatch({ type: 'tradeRespond', accept: false })}>Decline</button>
+        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#24405c', padding: 12, borderRadius: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+          {t('app.tradeOffer', { name: displayName(t, state.players[state.pending.from]!.name) })}
+          <button onClick={() => dispatch({ type: 'tradeRespond', accept: true })}>{t('app.accept')}</button>
+          <button onClick={() => dispatch({ type: 'tradeRespond', accept: false })}>{t('app.decline')}</button>
         </div>
       )}
       {devOpen && (
@@ -146,8 +152,8 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
       {state.winner !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'grid', placeItems: 'center', zIndex: 20 }}>
           <div style={{ background: '#1c2f43', padding: 28, borderRadius: 14, textAlign: 'center' }}>
-            <h1>{state.players[state.winner]!.name} wins! 🏆</h1>
-            <button onClick={onExit}>New Game</button>
+            <h1>{t('app.wins', { name: displayName(t, state.players[state.winner]!.name) })}</h1>
+            <button onClick={onExit}>{t('app.playAgain')}</button>
           </div>
         </div>
       )}

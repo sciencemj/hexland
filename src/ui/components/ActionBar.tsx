@@ -1,6 +1,7 @@
 // src/ui/components/ActionBar.tsx
 import type { Action } from '../../engine/types';
 import type { Mode } from '../interaction';
+import { useI18n } from '../i18n';
 
 interface Props {
   legal: Action[]; mode: Mode; setMode: (m: Mode) => void;
@@ -8,7 +9,8 @@ interface Props {
   onTrade: () => void; onPlayDev: () => void;
 }
 export function ActionBar({ legal, mode, setMode, onRoll, onBuy, onEndTurn, onTrade, onPlayDev }: Props) {
-  const has = (t: Action['type']) => legal.some(a => a.type === t);
+  const { t } = useI18n();
+  const has = (type: Action['type']) => legal.some(a => a.type === type);
   const btn = (label: string, on: () => void, enabled: boolean, active = false) => (
     <button disabled={!enabled} onClick={on}
       style={{ padding: '6px 10px', borderRadius: 6, border: active ? '2px solid #7cf' : '1px solid #456',
@@ -19,14 +21,14 @@ export function ActionBar({ legal, mode, setMode, onRoll, onBuy, onEndTurn, onTr
   const toggle = (m: Mode) => () => setMode(mode === m ? 'idle' : m);
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-      {btn('🎲 Roll', onRoll, has('rollDice'))}
-      {btn('Road', toggle('road'), has('buildRoad'), mode === 'road')}
-      {btn('Settlement', toggle('settlement'), has('buildSettlement'), mode === 'settlement')}
-      {btn('City', toggle('city'), has('buildCity'), mode === 'city')}
-      {btn('Buy Dev', onBuy, has('buyDevCard'))}
-      {btn('Play Dev', onPlayDev, has('playKnight') || has('playRoadBuilding') || has('playYearOfPlenty') || has('playMonopoly'))}
-      {btn('Trade', onTrade, has('tradeBank'))}
-      {btn('End Turn', onEndTurn, has('endTurn'))}
+      {btn(t('action.roll'), onRoll, has('rollDice'))}
+      {btn(t('action.road'), toggle('road'), has('buildRoad'), mode === 'road')}
+      {btn(t('action.settlement'), toggle('settlement'), has('buildSettlement'), mode === 'settlement')}
+      {btn(t('action.city'), toggle('city'), has('buildCity'), mode === 'city')}
+      {btn(t('action.buyDev'), onBuy, has('buyDevCard'))}
+      {btn(t('action.playDev'), onPlayDev, has('playKnight') || has('playRoadBuilding') || has('playYearOfPlenty') || has('playMonopoly'))}
+      {btn(t('action.trade'), onTrade, has('tradeBank'))}
+      {btn(t('action.endTurn'), onEndTurn, has('endTurn'))}
     </div>
   );
 }

@@ -2,6 +2,10 @@
 import { test, expect } from 'bun:test';
 import { createGame } from '../../src/engine/state';
 import { productionProfile, publicVictoryPoints, contextualTips } from '../../src/ui/insights';
+import { translate } from '../../src/ui/i18n';
+
+// English t() for assertions on string content.
+const t = (k: string, p?: Record<string, string | number>) => translate('en', k, p);
 
 test('productionProfile reflects a player\'s buildings on the visible board', () => {
   const s: any = createGame({ numPlayers: 4, seed: 5 });
@@ -32,13 +36,13 @@ test('contextualTips warns about the 7 discard threshold', () => {
   // force play phase
   s.phase = 'play'; s.setup = null;
   s.players[0].resources = { wood: 8, brick: 0, sheep: 0, wheat: 0, ore: 0 };
-  const tips = contextualTips(s, 0);
-  expect(tips.some(t => t.includes('discard'))).toBe(true);
+  const tips = contextualTips(s, 0, t);
+  expect(tips.some(tip => tip.includes('discard'))).toBe(true);
 });
 
 test('contextualTips gives setup advice during setup', () => {
   const s: any = createGame({ numPlayers: 4, seed: 5 });
-  const tips = contextualTips(s, 0);
+  const tips = contextualTips(s, 0, t);
   expect(tips.length).toBeGreaterThan(0);
   expect(tips.join(' ').toLowerCase()).toContain('settlement');
 });
