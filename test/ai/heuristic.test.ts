@@ -27,3 +27,27 @@ test('heuristic setup chooses a high-value node (not strictly the first legal on
   // (sanity: it returns one of the legal nodes)
   expect(legal.some((x: any) => x.node === a.node)).toBe(true);
 });
+
+test('heuristic rejects a trade offer it cannot pay (never accepts an unaffordable trade)', async () => {
+  let g: any = createGame({ numPlayers: 4, seed: 5 });
+  for (let i = 0; i < 100 && g.phase === 'setup'; i++) {
+    const p = g.setup.order[g.setup.index];
+    g = applyAction(g, p, getLegalActions(g, p)[0]);
+  }
+  g.turn.hasRolled = true;
+  const human = g.currentPlayer;
+  const ai = (human + 1) % 4;
+  g.players[human].resources = { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+  g.players[ai].resources = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 }; // AI has no ore
+  // Human offers 2 wood for 1 ore the AI doesn't have (gain looks positive to a naive agent)
+  const offered = applyAction(g, human, {
+    type: 'tradeOffer', to: ai,
+    give: { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+    want: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 1 },
+  });
+  const legal = getLegalActions(offered, ai);
+  const decision: any = await heuristicAgent.decide(offered, legal, ai);
+  expect(decision).toEqual({ type: 'tradeRespond', accept: false });
+  // and applying the AI's decision must never throw (this is the freeze bug)
+  expect(() => applyAction(offered, ai, decision)).not.toThrow();
+});

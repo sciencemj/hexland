@@ -40,10 +40,14 @@ function playActions(state: State, playerId: PlayerId): Action[] {
       return pending.remaining.includes(playerId) ? [{ type: 'discard', resources: emptyResources() }] : [];
     if (pending.kind === 'robber')
       return playerId === pending.mover ? robberActions(state) : [];
-    if (pending.kind === 'tradeOffer')
-      return playerId === pending.to
+    if (pending.kind === 'tradeOffer') {
+      if (playerId !== pending.to) return [];
+      // only offer "accept" when the responder can actually pay the requested cards
+      const canAccept = RESOURCES.every(r => state.players[playerId]!.resources[r] >= pending.want[r]);
+      return canAccept
         ? [{ type: 'tradeRespond', accept: true }, { type: 'tradeRespond', accept: false }]
-        : [];
+        : [{ type: 'tradeRespond', accept: false }];
+    }
     return [];
   }
   if (playerId !== state.currentPlayer) return [];

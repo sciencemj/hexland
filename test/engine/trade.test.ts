@@ -121,3 +121,23 @@ test('tradeRespond accept throws when offerer no longer holds the offered cards'
   expect(() => applyAction(offered, opp, { type: 'tradeRespond', accept: true }))
     .toThrow('offerer no longer holds the offered cards');
 });
+
+test('getLegalActions offers accept only when the responder can pay the requested cards', () => {
+  const s: any = freshPlay();
+  const p = s.currentPlayer;
+  const opp = (p + 1) % 4;
+  s.players[p].resources = { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+  s.players[opp].resources = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 }; // opp has no ore
+  const offered = applyAction(s, p, {
+    type: 'tradeOffer', to: opp,
+    give: { wood: 2, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+    want: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 1 }, // asks for 1 ore the opp lacks
+  });
+  const legal = getLegalActions(offered, opp);
+  // accept must NOT be offered (the engine would throw on it); only reject
+  expect(legal.some((a) => a.type === 'tradeRespond' && a.accept === true)).toBe(false);
+  expect(legal.some((a) => a.type === 'tradeRespond' && a.accept === false)).toBe(true);
+  // rejecting is safe and clears the offer
+  const after = applyAction(offered, opp, { type: 'tradeRespond', accept: false });
+  expect(after.pending).toBeNull();
+});

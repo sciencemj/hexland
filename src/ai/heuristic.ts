@@ -60,7 +60,8 @@ export const heuristicAgent: Agent = {
     if (respond.length && state.pending?.kind === 'tradeOffer') {
       const give = state.pending.want, get = state.pending.give; // from the responder's view
       const gain = RESOURCES.reduce((s, r) => s + get[r] - give[r], 0);
-      return { type: 'tradeRespond', accept: gain >= 0 };
+      const canAfford = RESOURCES.every(r => state.players[playerId]!.resources[r] >= give[r]);
+      return { type: 'tradeRespond', accept: gain >= 0 && canAfford };
     }
 
     // 4) setup placement
