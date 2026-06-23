@@ -33,8 +33,10 @@ export interface Board { hexes: Hex[]; nodes: Node[]; edges: Edge[]; robberHex: 
 
 export interface DevCard { type: DevCardType; boughtTurn: number; played: boolean; }
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
 export interface Player {
-  id: PlayerId; name: string; color: string; isAI: boolean; aiDifficulty: 'medium' | null;
+  id: PlayerId; name: string; color: string; isAI: boolean; aiDifficulty: Difficulty | null;
   resources: ResourceMap;
   devCards: DevCard[];
   playedKnights: number;
@@ -83,6 +85,7 @@ export interface GameConfig {
   seed: number;
   names?: string[];
   layoutMode?: 'random';
+  difficulty?: Difficulty;      // AI strength (default 'medium')
 }
 
 export type Action =

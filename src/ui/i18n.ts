@@ -15,6 +15,10 @@ const dict: Record<Lang, Record<string, string>> = {
     'newgame.title': 'Hexland — New Game',
     'newgame.disclaimer': 'Unofficial fan project. Not affiliated with or endorsed by Catan GmbH / Catan Studio.',
     'newgame.aiOpponents': 'AI opponents:',
+    'newgame.difficulty': 'Difficulty:',
+    'diff.easy': 'Easy',
+    'diff.medium': 'Normal',
+    'diff.hard': 'Hard',
     'newgame.seed': 'Seed:',
     'newgame.start': 'Start',
 
@@ -121,6 +125,10 @@ const dict: Record<Lang, Record<string, string>> = {
     'newgame.title': 'Hexland — 새 게임',
     'newgame.disclaimer': '비공식 팬 프로젝트입니다. Catan GmbH / Catan Studio와 무관하며 후원받지 않았습니다.',
     'newgame.aiOpponents': 'AI 상대:',
+    'newgame.difficulty': '난이도:',
+    'diff.easy': '쉬움',
+    'diff.medium': '보통',
+    'diff.hard': '어려움',
     'newgame.seed': '시드:',
     'newgame.start': '시작',
 

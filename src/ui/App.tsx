@@ -37,7 +37,7 @@ function displayVp(state: State, pid: PlayerId, reveal: boolean): number {
 export function App() {
   const [start, setStart] = useState<{ state: State } | null>(null);
   if (!start) {
-    return <NewGameDialog onStart={(ai, seed) => setStart({ state: createGame({ numPlayers: 1 + ai, humanCount: 1, seed }) })} />;
+    return <NewGameDialog onStart={(ai, seed, difficulty) => setStart({ state: createGame({ numPlayers: 1 + ai, humanCount: 1, seed, difficulty }) })} />;
   }
   return <GameView initial={start.state} onExit={() => setStart(null)} />;
 }
@@ -45,7 +45,7 @@ export function App() {
 function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
   const { t } = useI18n();
   const [aiDelay, setAiDelay] = useState<number>(loadAiDelay);
-  const agents = useMemo(() => initial.players.map(() => getAgent('medium')), [initial]);
+  const agents = useMemo(() => initial.players.map(p => getAgent(p.aiDifficulty ?? 'medium')), [initial]);
   const { state, dispatch, legal } = useGame(initial, agents, aiDelay);
   const [mode, setMode] = useState<Mode>('idle');
   const [robberChoice, setRobberChoice] = useState<{ targets: PlayerId[]; byHex: HexId } | null>(null);

@@ -33,7 +33,7 @@ export function createGame(config: GameConfig): State {
     name: config.names?.[i] ?? (i < humanCount ? `You` : `AI ${i}`),
     color: COLORS[i]!,
     isAI: i >= humanCount,
-    aiDifficulty: i >= humanCount ? 'medium' : null,
+    aiDifficulty: i >= humanCount ? (config.difficulty ?? 'medium') : null,
     resources: emptyResources(),
     devCards: [],
     playedKnights: 0,
