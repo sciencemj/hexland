@@ -5,10 +5,10 @@ import { useI18n } from '../i18n';
 
 interface Props {
   legal: Action[]; mode: Mode; setMode: (m: Mode) => void;
-  onRoll: () => void; onBuy: () => void; onEndTurn: () => void;
+  onBuy: () => void; onEndTurn: () => void;
   onTrade: () => void; onPlayDev: () => void;
 }
-export function ActionBar({ legal, mode, setMode, onRoll, onBuy, onEndTurn, onTrade, onPlayDev }: Props) {
+export function ActionBar({ legal, mode, setMode, onBuy, onEndTurn, onTrade, onPlayDev }: Props) {
   const { t } = useI18n();
   const has = (type: Action['type']) => legal.some(a => a.type === type);
   const btn = (label: string, on: () => void, enabled: boolean, active = false) => (
@@ -21,7 +21,6 @@ export function ActionBar({ legal, mode, setMode, onRoll, onBuy, onEndTurn, onTr
   const toggle = (m: Mode) => () => setMode(mode === m ? 'idle' : m);
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-      {btn(t('action.roll'), onRoll, has('rollDice'))}
       {btn(t('action.road'), toggle('road'), has('buildRoad'), mode === 'road')}
       {btn(t('action.settlement'), toggle('settlement'), has('buildSettlement'), mode === 'settlement')}
       {btn(t('action.city'), toggle('city'), has('buildCity'), mode === 'city')}

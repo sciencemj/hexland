@@ -1,6 +1,8 @@
 // src/ui/components/Board.tsx
-import type { State, NodeId, EdgeId, HexId, Terrain } from '../../engine/types';
+import type { State, NodeId, EdgeId, HexId, Terrain, Resource } from '../../engine/types';
 import { VIEW, hexPolygon, hexCenterPx, nodePoint, edgeSegment } from '../geometry';
+
+const RES_PORT_ICON: Record<Resource, string> = { wood: '🌲', brick: '🧱', sheep: '🐑', wheat: '🌾', ore: '⛰️' };
 
 // Per-terrain palette: a lit top tint → base → shaded bottom, for a domed 3D look.
 const TERRAIN_GRAD: Record<Terrain, { light: string; base: string; dark: string }> = {
@@ -32,7 +34,7 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
 
   return (
     <svg viewBox={`0 0 ${VIEW.width} ${VIEW.height}`}
-      style={{ width: '100%', maxWidth: 720, borderRadius: 14, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+      style={{ width: '100%', maxWidth: 720, display: 'block', margin: '0 auto', borderRadius: 14, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
       <defs>
         {Object.entries(TERRAIN_GRAD).map(([k, g]) => (
           <linearGradient key={k} id={`t-${k}`} x1="0" y1="0" x2="0.35" y2="1">
@@ -111,6 +113,34 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
               <polygon points={hexPolygon(h.id)} fill="rgba(255,255,255,0.22)" stroke="#fff"
                 strokeWidth={3} style={{ cursor: 'pointer' }} onClick={() => onHex?.(h.id)} />
             )}
+          </g>
+        );
+      })}
+
+      {/* harbors: a badge in the sea + dock lines to the two harbor intersections */}
+      {state.board.portSlots.map(slot => {
+        const e = state.board.edges[slot]!;
+        const port = state.board.nodes[e.nodeIds[0]]!.port;
+        if (!port) return null;
+        const seg = edgeSegment(slot);
+        const a = nodePoint(e.nodeIds[0]), b = nodePoint(e.nodeIds[1]);
+        let dx = seg.mx - VIEW.width / 2, dy = seg.my - VIEW.height / 2;
+        const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+        const px = seg.mx + dx * 27, py = seg.my + dy * 27; // pushed out into the sea
+        const isAny = port === 'any';
+        return (
+          <g key={`p${slot}`} pointerEvents="none">
+            <line x1={px} y1={py} x2={a.x} y2={a.y} stroke="#caa46a" strokeWidth={1.6} strokeDasharray="2.5 2.5" opacity={0.75} />
+            <line x1={px} y1={py} x2={b.x} y2={b.y} stroke="#caa46a" strokeWidth={1.6} strokeDasharray="2.5 2.5" opacity={0.75} />
+            <g transform={`translate(${px},${py})`}>
+              <rect x={-16} y={-12} width={32} height={24} rx={6} fill="#11314a" stroke="#caa46a" strokeWidth={1.3} />
+              {isAny
+                ? <text x={0} y={4} textAnchor="middle" fontSize={12} fontWeight={800} fill="#f2e6c8">3:1</text>
+                : <>
+                    <text x={0} y={-1} textAnchor="middle" fontSize={9.5} fontWeight={800} fill="#f2e6c8">2:1</text>
+                    <text x={0} y={10} textAnchor="middle" fontSize={10}>{RES_PORT_ICON[port as Resource]}</text>
+                  </>}
+            </g>
           </g>
         );
       })}
