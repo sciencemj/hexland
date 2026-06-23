@@ -12,7 +12,8 @@ export type Params = Record<string, string | number>;
 
 const dict: Record<Lang, Record<string, string>> = {
   en: {
-    'newgame.title': 'Catan — New Game',
+    'newgame.title': 'Hexland — New Game',
+    'newgame.disclaimer': 'Unofficial fan project. Not affiliated with or endorsed by Catan GmbH / Catan Studio.',
     'newgame.aiOpponents': 'AI opponents:',
     'newgame.seed': 'Seed:',
     'newgame.start': 'Start',
@@ -117,7 +118,8 @@ const dict: Record<Lang, Record<string, string>> = {
     'settings.sound': 'Sound',
   },
   ko: {
-    'newgame.title': '카탄 — 새 게임',
+    'newgame.title': 'Hexland — 새 게임',
+    'newgame.disclaimer': '비공식 팬 프로젝트입니다. Catan GmbH / Catan Studio와 무관하며 후원받지 않았습니다.',
     'newgame.aiOpponents': 'AI 상대:',
     'newgame.seed': '시드:',
     'newgame.start': '시작',

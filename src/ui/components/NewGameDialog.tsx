@@ -24,6 +24,9 @@ export function NewGameDialog({ onStart }: { onStart: (aiCount: number, seed: nu
         </div>
         <button style={{ padding: '8px 16px', fontWeight: 700 }}
           onClick={() => onStart(ai, Number(seed) || 1)}>{t('newgame.start')}</button>
+        <p style={{ marginTop: 18, marginBottom: 0, fontSize: 11, opacity: 0.55, maxWidth: 300, lineHeight: 1.5 }}>
+          {t('newgame.disclaimer')}
+        </p>
       </div>
     </div>
   );
