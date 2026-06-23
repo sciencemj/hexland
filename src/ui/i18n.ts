@@ -121,6 +121,9 @@ const dict: Record<Lang, Record<string, string>> = {
     'settings.title': 'Settings',
     'settings.speed': 'AI speed',
     'settings.sound': 'Sound',
+    'tab.board': 'Board',
+    'tab.players': 'Players',
+    'tab.info': 'Info',
   },
   ko: {
     'newgame.title': 'Hexland — 새 게임',
@@ -232,6 +235,9 @@ const dict: Record<Lang, Record<string, string>> = {
     'settings.title': '설정',
     'settings.speed': 'AI 속도',
     'settings.sound': '소리',
+    'tab.board': '보드',
+    'tab.players': '플레이어',
+    'tab.info': '정보',
   },
 };
 

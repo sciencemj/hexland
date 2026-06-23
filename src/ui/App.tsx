@@ -24,6 +24,7 @@ import { SettingsMenu } from './components/SettingsMenu';
 import { loadAiDelay } from './components/SpeedToggle';
 import { useI18n, displayName } from './i18n';
 import { useGameFx } from './useGameFx';
+import { useIsMobile } from './useIsMobile';
 import { playSfx } from './sound';
 
 // public VP (hides opponents' hidden Victory Point cards)
@@ -51,6 +52,8 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
   const [robberChoice, setRobberChoice] = useState<{ targets: PlayerId[]; byHex: HexId } | null>(null);
   const [devOpen, setDevOpen] = useState(false);
   const [tradeOpen, setTradeOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const [tab, setTab] = useState<'board' | 'players' | 'info'>('board');
 
   const human = 0;
   const { diceRollKey, recentEdges, recentNodes } = useGameFx(state, human, playSfx);
@@ -71,67 +74,70 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
   const pendingDiscard = state.pending?.kind === 'discard' && state.pending.remaining.includes(human);
   const pendingOffer = state.pending?.kind === 'tradeOffer' && state.pending.to === human;
 
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 340px', gap: 16, padding: 16 }}>
-      {/* left column: players + log */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <button onClick={onExit}>{t('app.newGame')}</button>
-          <SettingsMenu aiDelay={aiDelay} setAiDelay={setAiDelay} />
-        </div>
-        {state.players.map(p => (
-          <PlayerPanel key={p.id} player={p}
-            vp={displayVp(state, p.id, p.id === human)}
-            isCurrent={state.currentPlayer === p.id}
-            hasLongestRoad={state.bonuses.longestRoad === p.id}
-            hasLargestArmy={state.bonuses.largestArmy === p.id}
-            reveal={p.id === human} />
-        ))}
-        <GameLog log={state.log} />
-      </div>
+  const header = (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <button onClick={onExit}>{t('app.newGame')}</button>
+      <SettingsMenu aiDelay={aiDelay} setAiDelay={setAiDelay} />
+    </div>
+  );
 
-      {/* center: board + controls */}
-      <div>
-        <Board state={state} onNode={onNode} onEdge={onEdge} onHex={onHex}
-          highlightNodes={highlights.nodes} highlightEdges={highlights.edges} highlightHexes={highlights.hexes}
-          recentEdges={recentEdges} recentNodes={recentNodes} />
+  const playersBlock = (
+    <>
+      {state.players.map(p => (
+        <PlayerPanel key={p.id} player={p}
+          vp={displayVp(state, p.id, p.id === human)}
+          isCurrent={state.currentPlayer === p.id}
+          hasLongestRoad={state.bonuses.longestRoad === p.id}
+          hasLargestArmy={state.bonuses.largestArmy === p.id}
+          reveal={p.id === human} />
+      ))}
+      <GameLog log={state.log} />
+    </>
+  );
 
-        <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <DiceDisplay dice={state.turn.dice} rollKey={diceRollKey} />
-            {/* fixed-height slot so the cards below never shift between pre/post roll */}
-            <div style={{ height: 48, display: 'flex', alignItems: 'center' }}>
-              {humanUp && has('rollDice') && (
-                <button onClick={() => dispatch({ type: 'rollDice' })}
-                  style={{ padding: '12px 32px', fontSize: 18, fontWeight: 800, borderRadius: 12, cursor: 'pointer',
-                    background: 'linear-gradient(#e8b94e,#d29a30)', color: '#1b2a3a', border: 'none',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.45)' }}>
-                  {t('action.roll')}
-                </button>
-              )}
-            </div>
+  const boardBlock = (
+    <div>
+      <Board state={state} onNode={onNode} onEdge={onEdge} onHex={onHex}
+        highlightNodes={highlights.nodes} highlightEdges={highlights.edges} highlightHexes={highlights.hexes}
+        recentEdges={recentEdges} recentNodes={recentNodes} />
+
+      <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <DiceDisplay dice={state.turn.dice} rollKey={diceRollKey} />
+          {/* fixed-height slot so the cards below never shift between pre/post roll */}
+          <div style={{ height: 48, display: 'flex', alignItems: 'center' }}>
+            {humanUp && has('rollDice') && (
+              <button onClick={() => dispatch({ type: 'rollDice' })}
+                style={{ padding: '12px 32px', fontSize: 18, fontWeight: 800, borderRadius: 12, cursor: 'pointer',
+                  background: 'linear-gradient(#e8b94e,#d29a30)', color: '#1b2a3a', border: 'none',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.45)' }}>
+                {t('action.roll')}
+              </button>
+            )}
           </div>
-          <HandPanel player={state.players[human]!} />
-          {humanUp && !state.pending && (
-            <ActionBar legal={legal} mode={mode} setMode={setMode}
-              onBuy={() => dispatch({ type: 'buyDevCard' })}
-              onEndTurn={() => dispatch({ type: 'endTurn' })}
-              onTrade={() => setTradeOpen(true)}
-              onPlayDev={() => setDevOpen(true)} />
-          )}
-          {state.phase === 'setup' && humanUp && (
-            <div>{t(legal[0]?.type === 'setupSettlement' ? 'app.setupSettlement' : 'app.setupRoad')}</div>
-          )}
-          {state.pending?.kind === 'robber' && state.pending.mover === human && (
-            <div>{t('app.moveRobber')}</div>
-          )}
         </div>
+        <HandPanel player={state.players[human]!} />
+        {humanUp && !state.pending && (
+          <ActionBar legal={legal} mode={mode} setMode={setMode}
+            onBuy={() => dispatch({ type: 'buyDevCard' })}
+            onEndTurn={() => dispatch({ type: 'endTurn' })}
+            onTrade={() => setTradeOpen(true)}
+            onPlayDev={() => setDevOpen(true)} />
+        )}
+        {state.phase === 'setup' && humanUp && (
+          <div style={{ textAlign: 'center' }}>{t(legal[0]?.type === 'setupSettlement' ? 'app.setupSettlement' : 'app.setupRoad')}</div>
+        )}
+        {state.pending?.kind === 'robber' && state.pending.mover === human && (
+          <div style={{ textAlign: 'center' }}>{t('app.moveRobber')}</div>
+        )}
       </div>
+    </div>
+  );
 
-      {/* right column: win conditions, tips, public opponent info */}
-      <InfoPanel state={state} human={human} />
+  const infoBlock = <InfoPanel state={state} human={human} />;
 
-      {/* interrupts / overlays */}
+  const overlays = (
+    <>
       {pendingDiscard && (
         <DiscardModal player={state.players[human]!} count={requiredDiscardCount(state, human)}
           onConfirm={r => dispatch({ type: 'discard', resources: r })} />
@@ -175,6 +181,36 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <div style={{ padding: 10, paddingBottom: 64 }}>
+        {header}
+        {tab === 'board' ? boardBlock : tab === 'players' ? playersBlock : infoBlock}
+        {overlays}
+        <nav style={{ position: 'fixed', left: 0, right: 0, bottom: 0, height: 56, display: 'flex',
+          background: '#12283b', borderTop: '1px solid #2a4660', zIndex: 15 }}>
+          {([['board', '🗺️'], ['players', '👥'], ['info', '📊']] as const).map(([k, icon]) => (
+            <button key={k} onClick={() => setTab(k)}
+              style={{ flex: 1, border: 'none', cursor: 'pointer', color: '#eee', fontSize: 11,
+                background: tab === k ? '#24405c' : 'transparent',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+              <span style={{ fontSize: 18 }}>{icon}</span>{t(`tab.${k}`)}
+            </button>
+          ))}
+        </nav>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 340px', gap: 16, padding: 16 }}>
+      <div>{header}{playersBlock}</div>
+      {boardBlock}
+      {infoBlock}
+      {overlays}
     </div>
   );
 }
