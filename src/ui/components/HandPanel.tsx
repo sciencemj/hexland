@@ -6,7 +6,7 @@ export function HandPanel({ player }: { player: Player }) {
   const { t } = useI18n();
   const playable = player.devCards.filter(c => !c.played);
   return (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
       {RESOURCES.map(r => (
         <span key={r} data-res={r} style={{ padding: '4px 8px', borderRadius: 6, background: '#2a4660', display: 'inline-block' }}>
           {tRes(t, r)}: <b>{player.resources[r]}</b>

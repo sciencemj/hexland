@@ -20,7 +20,7 @@ export function ActionBar({ legal, mode, setMode, onBuy, onEndTurn, onTrade, onP
   );
   const toggle = (m: Mode) => () => setMode(mode === m ? 'idle' : m);
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
       {btn(t('action.road'), toggle('road'), has('buildRoad'), mode === 'road')}
       {btn(t('action.settlement'), toggle('settlement'), has('buildSettlement'), mode === 'settlement')}
       {btn(t('action.city'), toggle('city'), has('buildCity'), mode === 'city')}
