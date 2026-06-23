@@ -21,8 +21,10 @@ import { TradePanel } from './components/TradePanel';
 import { NewGameDialog } from './components/NewGameDialog';
 import { InfoPanel } from './components/InfoPanel';
 import { LanguageToggle } from './components/LanguageToggle';
+import { SoundToggle } from './components/SoundToggle';
 import { useI18n, displayName } from './i18n';
 import { useGameFx } from './useGameFx';
+import { playSfx } from './sound';
 
 // public VP (hides opponents' hidden Victory Point cards)
 function displayVp(state: State, pid: PlayerId, reveal: boolean): number {
@@ -50,7 +52,7 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
   const [tradeOpen, setTradeOpen] = useState(false);
 
   const human = 0;
-  const { diceRollKey, recentEdges, recentNodes } = useGameFx(state, human);
+  const { diceRollKey, recentEdges, recentNodes } = useGameFx(state, human, playSfx);
   const actor = nextActor(state);
   const humanUp = actor === human;
   const highlights = useMemo(() => highlightsFor(state, legal, mode), [state, legal, mode]);
@@ -74,7 +76,10 @@ function GameView({ initial, onExit }: { initial: State; onExit: () => void }) {
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <button onClick={onExit}>{t('app.newGame')}</button>
-          <LanguageToggle />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <SoundToggle />
+            <LanguageToggle />
+          </div>
         </div>
         {state.players.map(p => (
           <PlayerPanel key={p.id} player={p}
