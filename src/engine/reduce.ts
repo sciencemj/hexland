@@ -7,6 +7,12 @@ import { randInt } from './rng';
 import { recomputeLongestRoad, recomputeArmy } from './scoring';
 
 export function applyAction(state: State, playerId: PlayerId, action: Action): State {
+  // phase gate: setup placements only in setup; everything else only in play
+  const isSetupAction = action.type === 'setupSettlement' || action.type === 'setupRoad';
+  if (state.phase === 'ended') throw new Error('the game is over');
+  if (state.phase === 'setup' && !isSetupAction) throw new Error('only setup placements are allowed during setup');
+  if (state.phase === 'play' && isSetupAction) throw new Error('setup is already complete');
+
   const s = clone(state);
   switch (action.type) {
     case 'setupSettlement': return setupSettlement(s, playerId, action.node);

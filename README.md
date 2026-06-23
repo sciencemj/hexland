@@ -36,13 +36,18 @@ bun run build    # bundle to dist/
   Claude-MCP agent later without touching the engine.
 - `src/ui/` — React + SVG. Renders the engine state; clicks dispatch actions.
 
-### Reusing the engine on a server / via MCP
+### Play with Claude (MCP)
 
-The engine never imports UI. A future Bun WebSocket server loads `src/engine`,
-validates client actions with `getLegalActions`, applies with `applyAction`, and
-broadcasts state. An MCP server exposes three tools — `get_state` (`redactFor`),
-`legal_actions` (`getLegalActions`), `apply_action` (`applyAction`) — so Claude
-plays as just another `Agent`. A `tradeOffer` action is intentionally free-form (not enumerated by `getLegalActions` because the offer space is unbounded); a server/MCP layer must accept it and rely on `applyAction` to validate it.
+An MCP server (`src/mcp/server.ts`) lets **Claude play Hexland** — it wraps the
+engine in `new_game` / `state` / `act` tools and auto-runs the AI seats between
+Claude's turns. See **[docs/MCP.md](docs/MCP.md)** to register it (a project
+`.mcp.json` is included for Claude Code). Run it standalone with `bun run mcp`.
+
+The engine never imports UI, so the same code also backs a future Bun WebSocket
+multiplayer server: load `src/engine`, validate client actions with
+`getLegalActions`, apply with `applyAction`, broadcast state. (`tradeOffer` is
+intentionally free-form — the offer space is unbounded — so a server/MCP layer
+accepts it and lets `applyAction` validate.)
 
 ## Rules
 
