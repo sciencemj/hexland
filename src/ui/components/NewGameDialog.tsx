@@ -4,7 +4,7 @@ import type { Difficulty } from '../../engine/types';
 import { useI18n } from '../i18n';
 import { LanguageToggle } from './LanguageToggle';
 
-const DIFFS: Difficulty[] = ['easy', 'medium', 'hard'];
+const DIFFS: Difficulty[] = ['easy', 'medium', 'hard', 'impossible'];
 
 export function NewGameDialog({ onStart }: { onStart: (aiCount: number, seed: number, difficulty: Difficulty) => void }) {
   const { t } = useI18n();

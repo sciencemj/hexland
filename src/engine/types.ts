@@ -33,7 +33,7 @@ export interface Board { hexes: Hex[]; nodes: Node[]; edges: Edge[]; robberHex: 
 
 export interface DevCard { type: DevCardType; boughtTurn: number; played: boolean; }
 
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'impossible';
 
 export interface Player {
   id: PlayerId; name: string; color: string; isAI: boolean; aiDifficulty: Difficulty | null;

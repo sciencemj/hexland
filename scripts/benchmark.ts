@@ -5,17 +5,19 @@ import { runToCompletion } from '../src/ai/runner';
 import { heuristicAgent } from '../src/ai/heuristic';
 import { randomAgent } from '../src/ai/agent';
 import { makeLookaheadAgent } from '../src/ai/lookahead';
+import { makeMctsAgent } from '../src/ai/mcts';
 import { DEFAULT_WEIGHTS } from '../src/ai/evaluate';
 import type { Agent } from '../src/ai/agent';
 
+const GAMES = Number(process.argv[2] ?? 16);
+const MCTS_ITERS = Number(process.argv[3] ?? 80);
+
 const lookA = makeLookaheadAgent(DEFAULT_WEIGHTS);
-const lookB = makeLookaheadAgent({ ...DEFAULT_WEIGHTS, production: 1.5, ore: 1.4, wheat: 1.4, diversity: 8, dev: 2, road: 3 });
+const mcts = makeMctsAgent(MCTS_ITERS, { depthCap: 50 });
 
-const NAMES = ['random', 'medium', 'lookA', 'lookB'];
-const AGENTS: Agent[] = [randomAgent, heuristicAgent, lookA, lookB];
+const NAMES = [`mcts(${MCTS_ITERS})`, 'lookahead', 'medium', 'random'];
+const AGENTS: Agent[] = [mcts, lookA, heuristicAgent, randomAgent];
 const N = 4;
-
-const GAMES = Number(process.argv[2] ?? 32);
 
 console.log(`Running ${GAMES} four-player games, seat-rotated. Candidates: ${NAMES.join(', ')}`);
 const t0 = Date.now();

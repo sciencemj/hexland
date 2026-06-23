@@ -19,6 +19,7 @@ const dict: Record<Lang, Record<string, string>> = {
     'diff.easy': 'Easy',
     'diff.medium': 'Normal',
     'diff.hard': 'Hard',
+    'diff.impossible': 'Impossible',
     'newgame.seed': 'Seed:',
     'newgame.start': 'Start',
 
@@ -129,6 +130,7 @@ const dict: Record<Lang, Record<string, string>> = {
     'diff.easy': '쉬움',
     'diff.medium': '보통',
     'diff.hard': '어려움',
+    'diff.impossible': '불가능',
     'newgame.seed': '시드:',
     'newgame.start': '시작',
 
