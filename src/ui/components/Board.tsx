@@ -117,7 +117,10 @@ export function Board({ state, highlightNodes = [], highlightEdges = [], highlig
       {state.board.edges.map(e => {
         const s = edgeSegment(e.id);
         if (e.road) return (
-          <g key={`e${e.id}`} filter="url(#pieceShadow)">
+          // No SVG filter here: a <line> has a degenerate (1-D) bounding box, which
+          // makes an objectBoundingBox filter region collapse and renders nothing in
+          // WebKit/WKWebView. The dark underlay line below is the road's outline/depth.
+          <g key={`e${e.id}`}>
             <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke="#0b1d2b" strokeWidth={9} strokeLinecap="round" />
             <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={colorOf(e.road.owner)} strokeWidth={6} strokeLinecap="round" />
           </g>
