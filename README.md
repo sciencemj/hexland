@@ -3,6 +3,10 @@
 A browser strategy board game — 1 human vs 1–3 heuristic-AI opponents — built on
 the classic settle/build/trade hex-island mechanics.
 
+### ▶ Play now: **<https://sciencemj.github.io/hexland/>**
+
+![Hexland gameplay](docs/img/screenshot.png)
+
 > **Disclaimer:** Hexland is an unofficial fan project. It is **not affiliated with,
 > sponsored by, or endorsed by Catan GmbH or Catan Studio**. "Catan" and "Settlers
 > of Catan" are trademarks of their respective owners; this project uses none of
