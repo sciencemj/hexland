@@ -112,6 +112,9 @@ const dict: Record<Lang, Record<string, string>> = {
     'tip.default': 'Roll, then trade and build. First to 10 VP wins.',
 
     'lang.label': 'Language',
+    'settings.title': 'Settings',
+    'settings.speed': 'AI speed',
+    'settings.sound': 'Sound',
   },
   ko: {
     'newgame.title': '카탄 — 새 게임',
@@ -214,6 +217,9 @@ const dict: Record<Lang, Record<string, string>> = {
     'tip.default': '주사위를 굴린 뒤 교역·건설하세요. 먼저 10점이면 승리.',
 
     'lang.label': '언어',
+    'settings.title': '설정',
+    'settings.speed': 'AI 속도',
+    'settings.sound': '소리',
   },
 };
 
